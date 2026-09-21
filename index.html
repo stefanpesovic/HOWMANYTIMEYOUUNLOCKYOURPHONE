@@ -467,6 +467,18 @@ details.calc .calcbody{animation:fadeIn .3s var(--ease)}
 #preview .ptx{font-size:15px;text-align:center}
 #preview .ptx2{font-size:13px;color:var(--text-2);text-align:center}
 
+/* challenge vs row */
+.vsrow{display:flex;align-items:center;justify-content:center;gap:22px;margin:10px 0 8px}
+.vscol{display:flex;flex-direction:column;align-items:center;gap:8px}
+.vsdiv{font-family:var(--mono);font-size:13px;letter-spacing:0.05em;color:var(--text-2)}
+
+/* story overlay */
+#storyOv{position:fixed;inset:0;z-index:85;background:rgba(5,7,13,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px}
+#storyOv.show{display:flex}
+#storyOv canvas{height:min(66dvh,640px);aspect-ratio:9/16;width:auto;border-radius:18px;border:1px solid var(--border);box-shadow:0 24px 80px rgba(0,0,0,0.6);cursor:pointer}
+#storyOv .btnrow{display:flex;gap:10px;width:100%;max-width:360px}
+#storyOv .ptx2{font-size:13px;color:var(--text-2);text-align:center}
+
 /* estimate note */
 .estnote{font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--accent);text-transform:uppercase;text-align:center;margin-bottom:8px}
 
@@ -498,6 +510,7 @@ details.calc .calcbody{animation:fadeIn .3s var(--ease)}
 var DAY_NUMBER = 1;
 var AWAKE_MIN = 960;
 var PHONE_KG = 0.17;
+var LIFT_M = 0.3;
 var SERBIA_USERS = 6130000;
 var PICKUPS_BASELINE = 58;
 var SERBIA_PER_SEC = SERBIA_USERS * PICKUPS_BASELINE / 86400;
@@ -595,7 +608,8 @@ var App = {
   enLang: false,
   estimate: false,
   n: 0, nRaw: 0, age: null, isPartialToday: false, partialHHMM: '',
-  m: 0, year: 0, tons: 0, life: 0,
+  m: 0, year: 0, tons: 0, life: 0, km: 0,
+  challenge: null,      // friend's number from #izazov= link
   exits: [],            // {at, away}
   openedAt: Date.now(),
   openedAtPerf: performance.now(),
@@ -607,6 +621,14 @@ var App = {
 
 var main = document.getElementById('app');
 var screens = {};
+
+try {
+  var chm = (location.hash || '').match(/izazov=(\d{1,4})/);
+  if (chm) {
+    var chn = parseInt(chm[1], 10);
+    if (chn >= 1 && chn <= 2000) App.challenge = chn;
+  }
+} catch(e){}
 
 /* ================= navigation ================= */
 var navigating = false;
@@ -875,7 +897,13 @@ builders.hook = function(){
   var scr = el('section', { class: 'screen', id: 'scr-hook' });
   screens.hook = scr;
 
-  scr.append(el('div', { class: 'mono a', text: 'TROSKU · DAN ' + pad2(DAY_NUMBER) , style: { marginBottom: '16px' } }));
+  scr.append(el('div', { class: 'mono a', text: App.challenge != null ? 'TROSKU · IZAZOV' : 'TROSKU · DAN ' + pad2(DAY_NUMBER), style: { marginBottom: '16px' } }));
+
+  if (App.challenge != null) {
+    scr.append(el('div', { class: 'card2 a', style: { marginBottom: '16px' } },
+      el('div', { class: 'mono', text: 'DRUG TE IZAZVAO', style: { marginBottom: '4px', color: 'var(--accent)' } }),
+      el('p', { style: { fontSize: '15px' }, text: 'Njegov broj: ' + fmt(App.challenge) + ' otključavanja dnevno. Pronađi svoj i vidi ko je gori.' })));
+  }
 
   var h1 = el('h1', { class: 'hook' });
   var l1words = 'Tvoj telefon već broji koliko puta ga otključaš.'.split(' ');
@@ -1638,6 +1666,7 @@ function computeDerived(){
   App.m = AWAKE_MIN / App.n;
   App.year = App.n * 365;
   App.tons = App.year * PHONE_KG / 1000;
+  App.km = App.year * LIFT_M / 1000;
   App.life = (App.age != null && App.age < LIFE_AGE) ? App.n * 365 * (LIFE_AGE - App.age) : 0;
 }
 
@@ -1701,6 +1730,12 @@ function messageTier(n){
     x: 'Većina ljudi nikad ne pogleda ovaj broj. Ti jesi. To je već pola posla.',
     s: 'Večeras stavi punjač u hodnik. Telefon spava napolju, ti unutra.'
   };
+}
+
+function kmComparison(km){
+  if (km >= 42.2) return 'Više od celog maratona. Samo ruka, samo telefon.';
+  if (km >= 21.1) return 'Više od polumaratona. Samo ruka, samo telefon.';
+  return 'To je ' + fmt(Math.round(km * 1000 / 400)) + ' krugova oko atletske staze.';
 }
 
 function weightComparison(tons){
@@ -1980,6 +2015,20 @@ builders.reveal = function(){
     activate: function(L){ countUp(L._num, App.year); }
   });
 
+  /* Layer — thumb kilometers */
+  layer({
+    dom: function(L){
+      L.append(mono('KILOMETRI PALCA'));
+      var num = el('div', { class: 'midnum', text: '0' });
+      L.append(num,
+        el('p', { class: 'sub', text: 'kilometara tvoja ruka pređe godišnje — samo dižući telefon do očiju.' }),
+        el('p', { class: 'sub2', text: kmComparison(App.km) }));
+      addHint(L);
+      L._num = num;
+    },
+    activate: function(L){ countUp(L._num, App.km, { decimals: 1, suffix: ' km' }); }
+  });
+
   /* Layer 6 — life (conditional) */
   if (App.age != null && App.age < LIFE_AGE) {
     layer({
@@ -2011,6 +2060,42 @@ builders.reveal = function(){
     activate: function(){ updateExitsLayer(); }
   });
 
+  /* Layer — friend challenge (conditional) */
+  if (App.challenge != null) {
+    layer({
+      dom: function(L){
+        L.append(mono('IZAZOV'));
+        var me = el('div', { class: 'midnum', text: '0' });
+        var fr = el('div', { class: 'midnum', text: '0', style: { color: 'var(--text-2)' } });
+        var row = el('div', { class: 'vsrow' },
+          el('div', { class: 'vscol' }, el('div', { class: 'mono', text: 'TI' }), me),
+          el('div', { class: 'vsdiv', text: 'VS' }),
+          el('div', { class: 'vscol' }, el('div', { class: 'mono', text: 'DRUG' }), fr));
+        var diff = App.n - App.challenge;
+        var verdict, sub2;
+        if (diff < 0) {
+          verdict = 'Ti pobeđuješ — dižeš telefon ' + fmt(-diff) + ' puta manje dnevno.';
+          sub2 = 'Ovde manji broj nosi pobedu. Javi mu da mu treba pomoć.';
+        } else if (diff > 0) {
+          verdict = 'Drug pobeđuje — ti dižeš telefon ' + fmt(diff) + ' puta više dnevno.';
+          sub2 = 'Ovde manji broj nosi pobedu. Revanš sutra?';
+        } else {
+          verdict = 'Nerešeno. Identično ste zavisni.';
+          sub2 = 'Isti broj, do jednog podizanja. Jezivo.';
+        }
+        L.append(row,
+          el('p', { class: 'sub', text: verdict }),
+          el('p', { class: 'sub2', text: sub2 }));
+        addHint(L);
+        L._me = me; L._fr = fr;
+      },
+      activate: function(L){
+        countUp(L._me, App.n);
+        countUp(L._fr, App.challenge);
+      }
+    });
+  }
+
   /* Layer 8 — message */
   var tier = messageTier(App.n);
   layer({
@@ -2037,13 +2122,14 @@ builders.reveal = function(){
         el('div', { class: 'lockbody' }));
       var t1 = el('h2', { class: 'a', style: { fontSize: '32px', fontWeight: '900', letterSpacing: '-0.03em' }, text: 'Sad ga zaključaj.' });
       var t2 = el('p', { class: 'a', style: { color: 'var(--text-2)', marginTop: '6px' }, text: 'Vidimo se sutra.' });
-      var shareBtn = el('button', { class: 'btn primary a', text: 'Sačuvaj rezultat', style: { marginTop: '24px' }, onclick: function(){ makeShareImage(shareBtn); } });
+      var shareBtn = el('button', { class: 'btn primary a', text: 'Napravi Story sliku', style: { marginTop: '24px' }, onclick: function(){ openStory(shareBtn); } });
       var retryBtn = el('button', { class: 'btn secondary a', text: 'Pokušaj ponovo', style: { marginTop: '12px' }, onclick: function(){
         App.estimate = false;
         go('input');
       } });
+      var chBtn = el('button', { class: 'btn secondary a', text: 'Izazovi druga', style: { marginTop: '12px' }, onclick: function(){ shareChallenge(); } });
       var details = buildCalcDetails();
-      L.append(lock, t1, t2, shareBtn, retryBtn, details);
+      L.append(lock, t1, t2, shareBtn, chBtn, retryBtn, details);
       L._lock = lock;
     },
     activate: function(L){
@@ -2119,6 +2205,23 @@ function showSrbPill(){
   if (p && App.revealActive && !sheetEl) p.classList.add('show');
 }
 
+/* ================= friend challenge share ================= */
+function shareChallenge(){
+  var url = location.origin + location.pathname + '#izazov=' + App.n;
+  var msg = 'Otključavam telefon ' + fmt(App.n) + ' puta dnevno. Koliko puta ti? Manji broj pobeđuje:';
+  App.suppressExit = true;
+  if (navigator.share) {
+    navigator.share({ title: 'Trosku izazov', text: msg, url: url }).catch(function(){});
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg + ' ' + url).then(
+      function(){ showToast('Link je kopiran.', 'Pošalji ga drugu i čekaj njegov broj.'); },
+      function(){ try { window.prompt('Kopiraj link i pošalji drugu:', msg + ' ' + url); } catch(e){} }
+    );
+  } else {
+    try { window.prompt('Kopiraj link i pošalji drugu:', msg + ' ' + url); } catch(e){}
+  }
+}
+
 /* ================= calc details ================= */
 function buildCalcDetails(){
   function H(t){ return el('div', { class: 'calch', text: t }); }
@@ -2132,6 +2235,9 @@ function buildCalcDetails(){
     H('Težina'),
     F('godišnji broj × 0,17 kg.'),
     P('Uzeli smo 170 g jer je to težina iPhone 16 (Apple), a Galaxy S25 ima 162 g (Samsung). Mnogi telefoni su teži, pa je stvarna brojka verovatno veća. Poređenja (auto, slon, autobus) su zaokružene aproksimacije.'),
+    H('Kilometri palca'),
+    F('godišnji broj × 0,3 m ÷ 1000.'),
+    P('Računamo oko 30 cm putanje ruke po jednom podizanju — od stola ili džepa do visine očiju. Gruba aproksimacija; maraton je 42,2 km, polumaraton 21,1 km, atletska staza 400 m.'),
     H('Do 75. godine'),
     F('dnevni broj × 365 × (75 − tvoje godine).'),
     P('75 je okrugla granica, ne očekivani životni vek.'),
@@ -2161,6 +2267,256 @@ var sharing = false;
 function isInApp(){
   return /Instagram|FBAN|FBAV|TikTok|musical_ly/.test(navigator.userAgent || '');
 }
+var STORY_W = 1080, STORY_H = 1920;
+var storyRefs = null;
+
+function drawStory(ctx, p, gdata){
+  var INTER = 'Inter, -apple-system, sans-serif';
+  var MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+  function seg(a, b){ return clamp((p - a) / (b - a), 0, 1); }
+  function eo(t){ return 1 - Math.pow(1 - t, 3); }
+  function rr(x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function spaced(txt, cx, y, sp){
+    var tw = 0, i;
+    for (i = 0; i < txt.length; i++) tw += ctx.measureText(txt[i]).width + sp;
+    var x = cx - tw / 2;
+    ctx.textAlign = 'left';
+    for (i = 0; i < txt.length; i++) { ctx.fillText(txt[i], x, y); x += ctx.measureText(txt[i]).width + sp; }
+    ctx.textAlign = 'center';
+  }
+
+  /* bg + grid */
+  ctx.fillStyle = '#0A0E1A';
+  ctx.fillRect(0, 0, STORY_W, STORY_H);
+  ctx.strokeStyle = 'rgba(240,246,252,0.04)';
+  ctx.lineWidth = 1;
+  for (var gx = 0; gx <= STORY_W; gx += 54) { ctx.beginPath(); ctx.moveTo(gx + 0.5, 0); ctx.lineTo(gx + 0.5, STORY_H); ctx.stroke(); }
+  for (var gy = 0; gy <= STORY_H; gy += 54) { ctx.beginPath(); ctx.moveTo(0, gy + 0.5); ctx.lineTo(STORY_W, gy + 0.5); ctx.stroke(); }
+  var glowA = 0.38 * eo(seg(0, 0.3));
+  var rg = ctx.createRadialGradient(540, 520, 0, 540, 520, 540);
+  rg.addColorStop(0, 'rgba(59,130,246,' + glowA.toFixed(3) + ')');
+  rg.addColorStop(1, 'rgba(59,130,246,0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, STORY_W, 1100);
+  ctx.textBaseline = 'alphabetic';
+
+  /* header */
+  var ht = eo(seg(0, 0.12));
+  ctx.globalAlpha = ht;
+  ctx.fillStyle = '#F0F6FC';
+  ctx.font = '900 44px ' + INTER;
+  ctx.textAlign = 'left';
+  ctx.fillText('Trosku', 80, 120);
+  var ww = ctx.measureText('Trosku').width;
+  ctx.fillStyle = '#3B82F6';
+  ctx.beginPath(); ctx.arc(80 + ww + 14, 114, 7, 0, Math.PI * 2); ctx.fill();
+  var d = new Date();
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '500 30px ' + MONO;
+  ctx.textAlign = 'right';
+  ctx.fillText(pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + '.', 1000, 120);
+  ctx.globalAlpha = 1;
+
+  /* label */
+  var lt = eo(seg(0.06, 0.18));
+  ctx.globalAlpha = lt;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '500 32px ' + MONO;
+  spaced('MOJ DAN SA TELEFONOM', 540, 272 + (1 - lt) * 24, 5);
+  ctx.globalAlpha = 1;
+
+  /* big number */
+  var nVal = Math.round(App.n * eo(seg(0.08, 0.4)));
+  var nStr = fmt(App.n);
+  var fs = 330;
+  ctx.font = '900 ' + fs + 'px ' + INTER;
+  while (ctx.measureText(nStr).width > 880 && fs > 100) { fs -= 10; ctx.font = '900 ' + fs + 'px ' + INTER; }
+  ctx.globalAlpha = eo(seg(0.08, 0.2));
+  ctx.fillStyle = '#F0F6FC';
+  ctx.fillText(fmt(nVal), 540, 560);
+  ctx.globalAlpha = 1;
+
+  /* subs */
+  var st = eo(seg(0.34, 0.48));
+  ctx.globalAlpha = st;
+  ctx.fillStyle = '#F0F6FC';
+  ctx.font = '600 42px ' + INTER;
+  ctx.fillText('puta dnevno otključam telefon.', 540, 646 + (1 - st) * 24);
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '500 34px ' + INTER;
+  ctx.fillText('Jednom na svakih ' + fmtM(App.m) + ' minuta dok sam budan.', 540, 704 + (1 - st) * 24);
+  ctx.globalAlpha = 1;
+
+  /* stat cards */
+  function statCard(x, y, w, h, label, valStr, caption, t){
+    if (t <= 0) return;
+    var dy = (1 - t) * 44;
+    ctx.save();
+    ctx.globalAlpha = t;
+    rr(x, y + dy, w, h, 28);
+    ctx.fillStyle = '#131824'; ctx.fill();
+    ctx.strokeStyle = '#1F2937'; ctx.lineWidth = 2; ctx.stroke();
+    var cx = x + w / 2;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#6B7280'; ctx.font = '500 25px ' + MONO;
+    ctx.fillText(label, cx, y + dy + 54);
+    ctx.fillStyle = '#F0F6FC'; ctx.font = '900 72px ' + INTER;
+    ctx.fillText(valStr, cx, y + dy + 130);
+    ctx.fillStyle = '#6B7280'; ctx.font = '500 24px ' + INTER;
+    ctx.fillText(caption, cx, y + dy + 166);
+    ctx.restore();
+  }
+  var cards = [
+    ['GODIŠNJE', function(k){ return fmt(Math.round(App.year * k)); }, 'puta za godinu dana'],
+    ['TEŽINA', function(k){ return fmt(App.tons * k, 1) + ' t'; }, 'podignem samo telefon'],
+    ['SKLEKOVI', function(k){ return fmt(Math.round(App.year * k)); }, 'da je svako podizanje sklek'],
+    ['KM PALCA', function(k){ return fmt(App.km * k, 1) + ' km'; }, 'pređe mi ruka godišnje']
+  ];
+  for (var ci = 0; ci < 4; ci++) {
+    var a0 = 0.42 + ci * 0.05;
+    var ct = eo(seg(a0, a0 + 0.13));
+    var ck = eo(seg(a0, a0 + 0.2));
+    statCard(ci % 2 === 0 ? 80 : 560, ci < 2 ? 780 : 990, 440, 186, cards[ci][0], cards[ci][1](ck), cards[ci][2], ct);
+  }
+
+  /* life wide card */
+  if (App.life > 0) {
+    var wt = eo(seg(0.64, 0.78));
+    if (wt > 0) {
+      var wdy = (1 - wt) * 44;
+      ctx.save();
+      ctx.globalAlpha = wt;
+      rr(80, 1206 + wdy, 920, 110, 28);
+      ctx.fillStyle = '#131824'; ctx.fill();
+      ctx.strokeStyle = '#3B82F6'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#6B7280'; ctx.font = '500 25px ' + MONO;
+      ctx.fillText('DO 75. GODINE OVIM TEMPOM', 540, 1206 + wdy + 44);
+      ctx.fillStyle = '#F0F6FC'; ctx.font = '900 48px ' + INTER;
+      ctx.fillText(fmt(Math.round(App.life * eo(seg(0.64, 0.84)))) + ' puta', 540, 1206 + wdy + 94);
+      ctx.restore();
+    }
+  }
+
+  /* day dots */
+  var gridW = 840;
+  var gridH = App.life > 0 ? 170 : 260;
+  var gy0 = App.life > 0 ? 1350 : 1250;
+  var lit = Math.floor(gdata.dots.length * seg(0.68, 0.9));
+  var whiteFrom = Math.floor(gdata.dots.length * 0.95);
+  for (var di = 0; di < gdata.dots.length; di++) {
+    var dt = gdata.dots[di];
+    ctx.fillStyle = di < lit ? (di >= whiteFrom ? '#F0F6FC' : '#3B82F6') : '#1F2937';
+    ctx.beginPath();
+    ctx.arc(120 + dt.x, gy0 + dt.y, Math.max(gdata.d / 2, 2), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#6B7280'; ctx.font = '500 24px ' + MONO;
+  ctx.textAlign = 'center';
+  var hourLabels = [[0, '7'], [4, '11'], [8, '15'], [12, '19'], [15, '23']];
+  for (var hi = 0; hi < hourLabels.length; hi++) {
+    ctx.fillText(hourLabels[hi][1], 120 + hourLabels[hi][0] * (gridW / 16) + gridW / 32, gy0 + gridH + 30);
+  }
+
+  /* tier card */
+  var tier = messageTier(App.n);
+  var tt = eo(seg(0.8, 0.92));
+  if (tt > 0) {
+    var tdy = (1 - tt) * 44;
+    ctx.save();
+    ctx.globalAlpha = tt;
+    rr(80, 1608 + tdy, 920, 150, 28);
+    ctx.fillStyle = '#131824'; ctx.fill();
+    ctx.strokeStyle = '#1F2937'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#6B7280'; ctx.font = '500 25px ' + MONO;
+    ctx.fillText('ZAKLJUČAK', 540, 1608 + tdy + 48);
+    var tfs = 42;
+    ctx.font = '800 ' + tfs + 'px ' + INTER;
+    while (ctx.measureText(tier.t).width > 860 && tfs > 24) { tfs -= 2; ctx.font = '800 ' + tfs + 'px ' + INTER; }
+    ctx.fillStyle = '#F0F6FC';
+    ctx.fillText(tier.t, 540, 1608 + tdy + 108);
+    ctx.restore();
+  }
+
+  /* footer */
+  var ft = eo(seg(0.88, 1));
+  ctx.globalAlpha = ft;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#3B82F6'; ctx.font = '700 40px ' + INTER;
+  ctx.fillText('trosku.com', 540, 1830);
+  ctx.fillStyle = '#6B7280'; ctx.font = '500 26px ' + MONO;
+  spaced('KOLIKO PUTA TI? PROVERI NA LINKU', 540, 1878, 3);
+  ctx.globalAlpha = 1;
+}
+
+function openStory(btn){
+  if (sharing) return;
+  var orig = btn.textContent;
+  btn.textContent = 'Pravim…';
+  btn.disabled = true;
+  Promise.all([
+    document.fonts.load('900 300px Inter'),
+    document.fonts.load('500 32px "JetBrains Mono"'),
+    document.fonts.ready
+  ]).catch(function(){}).then(function(){
+    btn.textContent = orig;
+    btn.disabled = false;
+    buildStoryOverlay();
+  });
+}
+
+function buildStoryOverlay(){
+  var old = document.getElementById('storyOv');
+  if (old) old.remove();
+  var srb = document.getElementById('srbPill');
+  if (srb) srb.classList.remove('show');
+
+  var gdata = computeDayDots(App.n, 840, App.life > 0 ? 170 : 260);
+  storyRefs = { gdata: gdata };
+
+  var cv = el('canvas', { 'aria-label': 'Story slika sa tvojim rezultatima', role: 'img' });
+  cv.width = STORY_W; cv.height = STORY_H;
+  var ctx = cv.getContext('2d');
+
+  var shareB = el('button', { class: 'btn primary', text: 'Podeli na Story', onclick: function(){ makeShareImage(shareB); } });
+  var closeB = el('button', { class: 'btn secondary', text: 'Zatvori', onclick: function(){
+    ov.remove();
+    storyRefs = null;
+    showSrbPill();
+  } });
+  var ov = el('div', { id: 'storyOv', class: 'show', role: 'dialog', 'aria-modal': 'true' },
+    cv,
+    el('p', { class: 'ptx2', text: 'Tapni sliku da pustiš animaciju ponovo.' }),
+    el('div', { class: 'btnrow' }, closeB, shareB));
+  document.body.append(ov);
+
+  var raf = null;
+  function play(){
+    if (raf) cancelAnimationFrame(raf);
+    if (RM) { drawStory(ctx, 1, gdata); return; }
+    var t0 = performance.now();
+    var DUR = 2600;
+    (function frame(t){
+      if (!document.body.contains(cv)) return;
+      var p = clamp(((t || performance.now()) - t0) / DUR, 0, 1);
+      drawStory(ctx, p, gdata);
+      if (p < 1) raf = requestAnimationFrame(frame);
+    })(t0);
+  }
+  cv.addEventListener('click', play);
+  play();
+}
+
 function makeShareImage(btn){
   if (sharing) return;
   sharing = true;
@@ -2181,127 +2537,9 @@ function makeShareImage(btn){
   ]).catch(function(){}).then(function(){
     try {
       var cv = document.createElement('canvas');
-      cv.width = 1080; cv.height = 1920;
+      cv.width = STORY_W; cv.height = STORY_H;
       var ctx = cv.getContext('2d');
-      var INTER = 'Inter, -apple-system, sans-serif';
-      var MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
-
-      // bg
-      ctx.fillStyle = '#0A0E1A';
-      ctx.fillRect(0, 0, 1080, 1920);
-      // grid
-      ctx.strokeStyle = 'rgba(240,246,252,0.04)';
-      ctx.lineWidth = 1;
-      for (var gx = 0; gx <= 1080; gx += 54) { ctx.beginPath(); ctx.moveTo(gx + 0.5, 0); ctx.lineTo(gx + 0.5, 1920); ctx.stroke(); }
-      for (var gy = 0; gy <= 1920; gy += 54) { ctx.beginPath(); ctx.moveTo(0, gy + 0.5); ctx.lineTo(1080, gy + 0.5); ctx.stroke(); }
-      // radial glow
-      var rg = ctx.createRadialGradient(540, 620, 0, 540, 620, 520);
-      rg.addColorStop(0, 'rgba(59,130,246,0.35)');
-      rg.addColorStop(1, 'rgba(59,130,246,0)');
-      ctx.fillStyle = rg;
-      ctx.fillRect(0, 100, 1080, 1040);
-
-      // wordmark
-      ctx.fillStyle = '#F0F6FC';
-      ctx.font = '900 44px ' + INTER;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText('Trosku', 80, 120);
-      var ww = ctx.measureText('Trosku').width;
-      ctx.fillStyle = '#3B82F6';
-      ctx.beginPath(); ctx.arc(80 + ww + 14, 114, 7, 0, Math.PI * 2); ctx.fill();
-      // date
-      var d = new Date();
-      ctx.fillStyle = '#6B7280';
-      ctx.font = '500 30px ' + MONO;
-      ctx.textAlign = 'right';
-      ctx.fillText(pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + '.', 1000, 120);
-
-      // label
-      ctx.textAlign = 'center';
-      ctx.font = '500 34px ' + MONO;
-      ctx.fillStyle = '#6B7280';
-      // letter-spacing 4px manual
-      (function(){
-        var txt = 'KOLIKO PUTA DNEVNO';
-        var sp = 4;
-        var tw = 0;
-        for (var i = 0; i < txt.length; i++) tw += ctx.measureText(txt[i]).width + sp;
-        var x = 540 - tw / 2;
-        ctx.textAlign = 'left';
-        for (i = 0; i < txt.length; i++) { ctx.fillText(txt[i], x, 300); x += ctx.measureText(txt[i]).width + sp; }
-        ctx.textAlign = 'center';
-      })();
-
-      // main number
-      var nStr = fmt(App.n);
-      var fs = 380;
-      ctx.fillStyle = '#F0F6FC';
-      do {
-        ctx.font = '900 ' + fs + 'px ' + INTER;
-        if (ctx.measureText(nStr).width <= 900) break;
-        fs -= 10;
-      } while (fs > 100);
-      ctx.fillText(nStr, 540, 640);
-
-      ctx.font = '600 44px ' + INTER;
-      ctx.fillText('puta dnevno otključam telefon.', 540, 740);
-      ctx.font = '500 36px ' + INTER;
-      ctx.fillStyle = '#6B7280';
-      ctx.fillText('Jednom na svakih ' + fmtM(App.m) + ' minuta.', 540, 810);
-
-      // card
-      function rr(x, y, w, h, r){
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.arcTo(x + w, y, x + w, y + h, r);
-        ctx.arcTo(x + w, y + h, x, y + h, r);
-        ctx.arcTo(x, y + h, x, y, r);
-        ctx.arcTo(x, y, x + w, y, r);
-        ctx.closePath();
-      }
-      rr(80, 900, 920, 180, 36);
-      ctx.fillStyle = '#131824'; ctx.fill();
-      ctx.strokeStyle = '#1F2937'; ctx.lineWidth = 2; ctx.stroke();
-
-      if (App.tons >= 1) {
-        ctx.fillStyle = '#6B7280'; ctx.font = '500 28px ' + MONO;
-        ctx.fillText('TEŽINA', 540, 945);
-        ctx.fillStyle = '#F0F6FC'; ctx.font = '900 96px ' + INTER;
-        ctx.fillText(fmt(App.tons, 1) + ' t', 540, 1030);
-        ctx.fillStyle = '#F0F6FC'; ctx.font = '500 32px ' + INTER;
-        ctx.fillText('godišnje podignem samo telefon', 540, 1068);
-      } else {
-        ctx.fillStyle = '#6B7280'; ctx.font = '500 28px ' + MONO;
-        ctx.fillText('SKLEKOVI', 540, 945);
-        ctx.fillStyle = '#F0F6FC'; ctx.font = '900 96px ' + INTER;
-        ctx.fillText(fmt(App.year), 540, 1030);
-        ctx.fillStyle = '#F0F6FC'; ctx.font = '500 32px ' + INTER;
-        ctx.fillText('sklekova godišnje, da je svako podizanje sklek', 540, 1068);
-      }
-
-      // dot grid
-      var gridW = 840, gridH = 400;
-      var gdata = computeDayDots(App.n, gridW, gridH);
-      for (var di = 0; di < gdata.dots.length; di++) {
-        var dt = gdata.dots[di];
-        ctx.fillStyle = (di >= Math.floor(gdata.dots.length * 0.95)) ? '#F0F6FC' : '#3B82F6';
-        ctx.beginPath();
-        ctx.arc(120 + dt.x, 1160 + dt.y, Math.max(gdata.d / 2, 2), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#6B7280'; ctx.font = '500 24px ' + MONO;
-      ctx.textAlign = 'center';
-      var hourLabels = [[0, '7'], [4, '11'], [8, '15'], [12, '19'], [15, '23']];
-      hourLabels.forEach(function(hl){
-        ctx.fillText(hl[1], 120 + hl[0] * (gridW / 16) + gridW / 32, 1600);
-      });
-
-      // footer
-      ctx.fillStyle = '#3B82F6'; ctx.font = '700 40px ' + INTER;
-      ctx.fillText('trosku.com', 540, 1760);
-      ctx.fillStyle = '#6B7280'; ctx.font = '500 26px ' + MONO;
-      ctx.fillText('KOLIKO PUTA TI? LINK U OPISU', 540, 1820);
+      drawStory(ctx, 1, storyRefs ? storyRefs.gdata : computeDayDots(App.n, 840, App.life > 0 ? 170 : 260));
 
       App.suppressExit = true;
       cv.toBlob(function(blob){
