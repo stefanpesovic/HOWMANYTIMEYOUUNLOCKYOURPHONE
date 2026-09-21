@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="sr-Latn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0E1A">
+<title>Koliko puta dnevno · Trosku</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A;
+  --surface:#131824;
+  --surface-2:#1A2030;
+  --border:#1F2937;
+  --text:#F0F6FC;
+  --text-2:#6B7280;
+  --accent:#3B82F6;
+  --accent-glow:rgba(59,130,246,0.35);
+  --danger:#EF4444;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --scroll:0;
+  --font:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;background:var(--bg)}
+body{
+  font-family:var(--font);color:var(--text);font-size:16px;line-height:1.45;font-weight:500;
+  min-height:100vh;min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:var(--font);touch-action:manipulation;cursor:pointer}
+input{font-family:var(--font)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+:focus:not(:focus-visible){outline:none}
+
+/* ---------- background grid ---------- */
+#bgWrap{position:fixed;inset:0;z-index:0;pointer-events:none;transform:translate3d(0,calc(var(--scroll) * -0.15px),0)}
+#bgGrid{
+  position:absolute;inset:-64px;
+  background-image:
+    linear-gradient(rgba(240,246,252,0.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(240,246,252,0.035) 1px,transparent 1px);
+  background-size:32px 32px;
+  animation:gridDrift 40s linear infinite;
+}
+@keyframes gridDrift{to{transform:translate3d(-32px,-32px,0)}}
+
+/* ---------- layout ---------- */
+#app{position:relative;z-index:1}
+.screen{
+  max-width:440px;margin:0 auto;padding:0 20px;
+  padding-top:calc(env(safe-area-inset-top) + 56px + 16px);
+  padding-bottom:calc(env(safe-area-inset-bottom) + 24px);
+  min-height:100vh;min-height:100dvh;
+  transition:transform .3s var(--ease),opacity .3s var(--ease);
+}
+.screen.leaving{transform:scale(0.96);opacity:0;position:absolute;top:0;left:0;right:0;pointer-events:none}
+.screen[hidden]{display:none}
+
+.mono{font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--text-2)}
+.mono.md{font-size:12px}
+h1.hook{font-size:32px;line-height:1.1;font-weight:900;letter-spacing:-0.03em}
+h2.title{font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-0.03em}
+.body-t{font-size:16px;font-weight:500;line-height:1.45}
+.small-t{font-size:13px;color:var(--text-2)}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* enter animation */
+.a{opacity:0;transform:translateY(24px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.a.in{opacity:1;transform:translateY(0)}
+
+/* buttons */
+.btn{
+  display:flex;align-items:center;justify-content:center;width:100%;
+  height:56px;min-height:52px;border-radius:16px;border:none;
+  font-weight:700;font-size:17px;transition:transform .1s var(--ease),box-shadow .2s var(--ease),opacity .2s;
+}
+.btn:active{transform:scale(0.97)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn:disabled{opacity:0.4;cursor:default}
+@media (hover:hover){
+  .btn.primary:hover:not(:disabled){box-shadow:0 0 0 1px var(--accent),0 8px 32px var(--accent-glow)}
+}
+.linkbtn{background:none;border:none;color:var(--text-2);font-size:15px;font-weight:600;padding:14px;width:100%;text-align:center;text-decoration:underline;text-underline-offset:3px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px}
+.card2{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px}
+
+.backbtn{
+  width:44px;height:44px;border-radius:12px;background:none;border:none;color:var(--text);
+  display:flex;align-items:center;gap:6px;padding:0;margin-bottom:12px;width:auto;padding-right:8px;
+}
+.backbtn .arr{font-size:20px;line-height:1}
+.backbtn .lbl{font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--text-2)}
+
+/* ---------- top bar ---------- */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:40;
+  height:calc(env(safe-area-inset-top) + 56px);
+  padding-top:env(safe-area-inset-top);
+  background:linear-gradient(#0A0E1A 60%,transparent);
+  pointer-events:none;display:flex;align-items:center;justify-content:space-between;
+  opacity:0;transition:opacity .4s var(--ease);
+}
+#topbar.show{opacity:1}
+#topbar .inner{width:100%;max-width:440px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+#brandMini{display:flex;align-items:baseline;gap:3px;pointer-events:auto}
+#brandMini .w{font-weight:900;font-size:17px;letter-spacing:-0.03em}
+#brandMini .d{width:4px;height:4px;border-radius:50%;background:var(--accent)}
+#countdown{font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--text-2);font-variant-numeric:tabular-nums;pointer-events:auto}
+#countdown.expired{color:var(--danger);animation:expPulse 1.6s ease-in-out infinite}
+@keyframes expPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* ---------- intro ---------- */
+#intro{position:fixed;inset:0;z-index:100;background:#0A0E1A;display:flex;align-items:center;justify-content:center;transition:opacity .25s linear}
+#introBox{position:relative;display:flex;flex-direction:column;align-items:center}
+#wordmark{display:flex;align-items:baseline;font-weight:900;font-size:56px;letter-spacing:-0.03em;position:relative}
+#wordmark .ltr{position:relative;opacity:0;transform:translateY(28px)}
+#wordmark .ltr.on{opacity:1;transform:translateY(0);transition:opacity .42s var(--ease),transform .42s var(--ease)}
+#wordmark .ltr .blur{position:absolute;left:0;top:0;color:transparent;text-shadow:0 0 12px rgba(240,246,252,0.9);opacity:1;transition:opacity .42s var(--ease)}
+#wordmark .ltr.on .blur{opacity:0}
+#introDot{position:absolute;width:12px;height:12px;border-radius:50%;background:#3B82F6;opacity:0}
+#introDot .glow{position:absolute;inset:0;border-radius:50%;background:var(--accent);opacity:0}
+#introLine{margin-top:18px;width:160px;height:2px;background:var(--accent);transform:scaleX(0);position:relative}
+#introLine .prog{position:absolute;inset:0;background:rgba(59,130,246,0.25)}
+#introLine .prog .fill{position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left}
+
+/* ---------- hook screen ---------- */
+.hookword{display:inline-block;opacity:0;transform:translateY(12px);transition:opacity .36s var(--ease),transform .36s var(--ease)}
+.hookword.in{opacity:1;transform:translateY(0)}
+#slotCard{
+  width:200px;height:160px;margin:32px auto;display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;position:relative;
+  -webkit-mask-image:linear-gradient(transparent,#000 24px,#000 calc(100% - 24px),transparent);
+  mask-image:linear-gradient(transparent,#000 24px,#000 calc(100% - 24px),transparent);
+}
+#slotNum{font-weight:900;font-size:120px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;position:relative;height:160px;display:flex;align-items:center}
+.slotv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+#slotNum .qm{color:var(--accent)}
+
+/* punch + ripple */
+@keyframes punch{0%{transform:scale(1.08)}100%{transform:scale(1)}}
+.punch{animation:punch .45s cubic-bezier(0.34,1.56,0.64,1)}
+.ripple{
+  position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;
+  border:2px solid var(--accent);pointer-events:none;
+  animation:rippleA .7s var(--ease) forwards;
+}
+@keyframes rippleA{0%{transform:scale(0);opacity:0.5}100%{transform:scale(9);opacity:0}}
+
+/* ---------- phone select ---------- */
+.platgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0 16px}
+.platcard{
+  height:148px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;
+  transition:border-color .2s,box-shadow .2s;
+}
+.platcard.sel{border:2px solid var(--accent);box-shadow:0 0 24px var(--accent-glow)}
+.platcard .sil{width:36px;height:64px;border:2px solid var(--text-2);border-radius:9px}
+.platcard .nm{font-weight:800;font-size:20px;letter-spacing:-0.03em}
+.platcard .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;color:var(--text-2);text-transform:uppercase}
+.platcard .badge{
+  position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;letter-spacing:0.05em;
+  color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:3px 7px;text-transform:uppercase;
+}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{
+  height:44px;border-radius:22px;padding:0 16px;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-weight:600;font-size:14px;transition:border-color .2s;
+}
+.chip.sel{border-color:var(--accent);color:var(--accent)}
+
+/* switch */
+.swrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0}
+.swrow .swlbl{font-size:15px;font-weight:600}
+.switch{
+  position:relative;width:52px;height:32px;border-radius:16px;background:var(--border);border:none;flex:none;
+  transition:background .2s;
+}
+.switch::after{
+  content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:var(--text);
+  transition:transform .25s var(--ease);
+}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+.switch:disabled{opacity:0.6;cursor:default}
+.switch.sm{width:44px;height:28px;border-radius:14px}
+.switch.sm::after{width:22px;height:22px}
+.switch.sm[aria-checked="true"]::after{transform:translateX(16px)}
+
+/* ---------- guide ---------- */
+.dots{display:flex;gap:8px;justify-content:center;margin:8px 0 20px}
+.dotw{width:24px;height:8px;display:flex;align-items:center;justify-content:center}
+.dotp{width:24px;height:8px;border-radius:4px;background:var(--border);transform:scaleX(0.333);transition:transform .3s var(--ease),background .3s;transform-origin:center}
+.dotw.done .dotp{background:var(--text)}
+.dotw.act .dotp{background:var(--accent);transform:scaleX(1)}
+.stepWrap{position:relative;touch-action:pan-y}
+.step{transition:transform .3s var(--ease),opacity .3s var(--ease)}
+.step.dragging{transition:none}
+.varcard{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:10px}
+.varcard .vtag{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;color:var(--accent);white-space:nowrap;padding-top:2px;text-transform:uppercase}
+.varcard .vname{font-weight:700;font-size:15px}
+.varcard .vdesc{font-size:13px;color:var(--text-2)}
+.bigchip{
+  display:inline-block;font-family:var(--mono);font-size:18px;letter-spacing:0.05em;color:var(--text);
+  background:var(--surface-2);border:1px solid var(--accent);border-radius:12px;padding:10px 18px;margin:10px 0 4px;text-transform:none;
+}
+
+/* ---------- phone mockup ---------- */
+.mockwrap{display:flex;justify-content:center;margin:20px 0 8px}
+@media (max-width:359px){.mockwrap .mock{transform:scale(0.9);transform-origin:top center}}
+.mock{
+  width:248px;height:508px;border-radius:40px;border:8px solid #05070D;position:relative;flex:none;
+  box-shadow:0 0 0 1px #2A3342,0 30px 80px rgba(0,0,0,0.5);
+}
+.mock .scr{position:absolute;inset:0;border-radius:32px;overflow:hidden}
+.mock.ios .scr{background:#000}
+.mock.and .scr{background:#121418}
+.mstatus{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:relative}
+.mstatus .clk{font-size:13px;font-weight:600}
+.mstatus .ind{display:flex;gap:5px;align-items:center}
+.sigbars{display:flex;gap:1.5px;align-items:flex-end}
+.sigbars i{display:block;width:2.5px;background:var(--text);border-radius:1px}
+.wifi{width:14px;height:11px;position:relative;overflow:hidden}
+.wifi i{position:absolute;left:50%;bottom:0;transform:translateX(-50%);border:1.6px solid var(--text);border-radius:50%;border-bottom-color:transparent;border-left-color:transparent;border-right-color:transparent}
+.batt{width:22px;height:11px;border:1px solid rgba(240,246,252,0.5);border-radius:3px;position:relative}
+.batt i{position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:70%;background:var(--text);border-radius:1px;display:block}
+.dynisland{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:84px;height:24px;background:#000;border:1px solid #1a1a1c;border-radius:12px}
+.punchhole{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#000;border:1px solid #2a2f36}
+.mbody{padding:8px 14px;position:relative;height:calc(100% - 36px)}
+.mtitle{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin:8px 2px 12px}
+.homegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:16px 6px}
+.appicon{width:100%;aspect-ratio:1;border-radius:12px;background:#2A3342;position:relative}
+.appicon.gray{background:#8E8E93}
+.gear{
+  position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  background:repeating-conic-gradient(#D6D8DC 0 16deg,transparent 16deg 45deg);
+}
+.gear::before{content:"";position:absolute;inset:3px;border-radius:50%;background:#D6D8DC}
+.gear::after{content:"";position:absolute;inset:9px;border-radius:50%;background:#8E8E93}
+.pulsering{position:absolute;width:44px;height:44px;border:2px solid var(--accent);border-radius:50%;pointer-events:none;animation:pulseA 1.4s var(--ease) infinite}
+@keyframes pulseA{0%{transform:scale(0.8);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.pulsering.alt1{animation:pulseAlt1 1.6s var(--ease) infinite}
+.pulsering.alt2{animation:pulseAlt2 1.6s var(--ease) infinite}
+@keyframes pulseAlt1{0%{transform:scale(0.8);opacity:1}40%{transform:scale(1.6);opacity:0}100%{transform:scale(1.6);opacity:0}}
+@keyframes pulseAlt2{0%,50%{transform:scale(0.8);opacity:0}50.1%{transform:scale(0.8);opacity:1}90%,100%{transform:scale(1.6);opacity:0}}
+.setrow{height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#1C1C1E;font-size:14px}
+.setrow + .setrow{border-top:1px solid #2a2a2d}
+.setrow:first-child{border-radius:10px 10px 0 0}
+.setrow:last-child{border-radius:0 0 10px 10px}
+.setrow .sq{width:29px;height:29px;border-radius:7px;flex:none}
+.setrow .chv{margin-left:auto;color:#5a5a5f;font-size:16px}
+.setrow.hl{position:relative}
+.finger{
+  position:absolute;width:34px;height:44px;border-radius:50%/60%;background:rgba(240,246,252,0.9);
+  box-shadow:0 4px 12px rgba(0,0,0,0.4);pointer-events:none;z-index:5;
+  animation:fingerA 2.4s var(--ease) infinite;
+}
+@keyframes fingerA{
+  0%{opacity:0;transform:translateY(140px)}
+  21%{opacity:1;transform:translateY(0) scale(1)}
+  28%{transform:translateY(0) scale(0.88)}
+  35%{transform:translateY(0) scale(1)}
+  80%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(0)}
+}
+.tapring{
+  position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,0.35);pointer-events:none;z-index:4;
+  animation:tapA 2.4s var(--ease) infinite;
+}
+@keyframes tapA{0%,27%{transform:scale(0);opacity:0.5}48%{transform:scale(2.2);opacity:0}100%{transform:scale(2.2);opacity:0}}
+.stbars{display:flex;gap:6px;align-items:flex-end;height:52px;margin:10px 2px}
+.stbars i{display:block;flex:1;background:#5E5CE6;border-radius:3px;transform:scaleY(0);transform-origin:bottom;transition:transform .6s var(--ease)}
+.mock .bluelink{color:#0A84FF;font-size:14px;padding:10px 2px;position:relative}
+.seg{display:flex;background:#1C1C1E;border-radius:9px;padding:2px;margin:4px 0 12px}
+.seg i{flex:1;text-align:center;font-size:13px;font-weight:600;padding:5px 0;border-radius:7px;font-style:normal;color:#8E8E93}
+.seg i.on{background:#3a3a3d;color:var(--text)}
+.mblock{background:#1C1C1E;border-radius:10px;padding:12px;margin-bottom:10px}
+.mock.and .mblock{background:#1E2228}
+.mblock .bt{font-size:13px;font-weight:600;margin-bottom:6px}
+.blurnum{font-weight:800;font-size:34px;letter-spacing:2px;color:var(--text)}
+.hlbox{position:relative;border:2px solid var(--accent);border-radius:10px;padding:8px 10px;animation:hlPulse 1.4s ease-in-out infinite}
+@keyframes hlPulse{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 0 6px rgba(59,130,246,0)}}
+.thisnum{display:flex;align-items:center;gap:6px;margin-top:8px}
+.thisnum .ar{color:var(--accent);font-size:16px}
+.thisnum .tx{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;color:var(--accent);text-transform:uppercase}
+.msearch{display:flex;align-items:center;gap:8px;background:#1E2228;border-radius:22px;height:40px;padding:0 14px;margin:6px 0 12px}
+.msearch .lupa{width:12px;height:12px;border:2px solid #8E8E93;border-radius:50%;position:relative;flex:none}
+.msearch .lupa::after{content:"";position:absolute;width:6px;height:2px;background:#8E8E93;bottom:-2px;right:-4px;transform:rotate(45deg)}
+.msearch .q{font-size:14px;color:var(--text)}
+.msearch .caret{width:2px;height:16px;background:var(--accent);animation:caretB 1s steps(1) infinite}
+@keyframes caretB{0%,49%{opacity:1}50%,100%{opacity:0}}
+.mres{background:#1E2228;border-radius:10px;padding:12px;font-size:14px;margin-bottom:8px;position:relative;opacity:0;transition:opacity .3s}
+.mres.show{opacity:1}
+.donutwrap{display:flex;justify-content:center;margin:8px 0 14px;position:relative}
+.donutmid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:800;font-size:20px}
+.androw{display:flex;align-items:center;gap:10px;background:#1E2228;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.androw .ic{width:22px;height:22px;flex:none;position:relative}
+.lockic{position:absolute;left:4px;top:9px;width:14px;height:11px;background:var(--text-2);border-radius:2px}
+.lockic::before{content:"";position:absolute;left:2px;top:-6px;width:10px;height:8px;border:2px solid var(--text-2);border-bottom:none;border-radius:5px 5px 0 0;box-sizing:border-box}
+.bellic{position:absolute;left:4px;top:3px;width:14px;height:13px;background:var(--text-2);border-radius:7px 7px 2px 2px}
+.bellic::after{content:"";position:absolute;left:5px;bottom:-3px;width:4px;height:3px;background:var(--text-2);border-radius:0 0 3px 3px}
+.androw .val{font-weight:800;font-size:18px;letter-spacing:2px}
+.androw .lb{font-size:12px;color:var(--text-2)}
+.androw.hl2{border:2px solid var(--accent);animation:hlPulse 1.4s ease-in-out infinite}
+.mocknote{font-size:12px;color:var(--text-2);text-align:center;margin-top:4px}
+
+/* ---------- bottom sheet ---------- */
+#sheetOverlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.6);opacity:0;transition:opacity .3s;display:none}
+#sheetOverlay.show{opacity:1}
+#sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:61;max-width:440px;margin:0 auto;
+  background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:24px 24px 0 0;
+  padding:20px 20px calc(env(safe-area-inset-bottom) + 20px);
+  transform:translateY(100%);transition:transform .4s var(--ease);display:none;
+  max-height:80dvh;overflow-y:auto;
+}
+#sheet.show{transform:translateY(0)}
+#sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px}
+#sheet h3{font-size:22px;font-weight:800;letter-spacing:-0.03em;margin-bottom:12px}
+#sheet p{font-size:15px;color:var(--text);margin-bottom:10px}
+#sheet p .mono-in{font-family:var(--mono);font-size:13px;background:var(--surface-2);border-radius:6px;padding:1px 6px}
+
+/* ---------- input screen ---------- */
+#numInput{
+  width:100%;background:none;border:none;color:var(--text);text-align:center;
+  font-weight:900;font-size:96px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;
+  padding:8px 0 4px;caret-color:var(--accent);
+}
+#numInput::placeholder{color:var(--border)}
+#numInput:focus{outline:none}
+.inputline{position:relative;height:2px;background:var(--border);margin-bottom:16px}
+.inputline .focusline{position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:center;transition:transform .3s var(--ease)}
+.inputline.foc .focusline{transform:scaleX(1)}
+#liveline{min-height:24px;text-align:center;font-size:15px;color:var(--text);transition:opacity .15s;margin-bottom:8px}
+#valmsg{min-height:22px;text-align:center;font-size:13px;color:var(--text-2);margin-bottom:8px}
+#valmsg.err{color:var(--danger)}
+#ageInput{
+  width:80px;background:none;border:none;border-bottom:2px solid var(--border);color:var(--text);
+  font-weight:800;font-size:24px;text-align:center;font-variant-numeric:tabular-nums;padding:2px 0;
+}
+#ageInput:focus{outline:none;border-bottom-color:var(--accent)}
+.ctaWrap{transition:transform .2s var(--ease)}
+
+/* ---------- transition screen ---------- */
+#transnum{font-weight:900;font-size:clamp(64px,20vw,96px);letter-spacing:-0.03em;font-variant-numeric:tabular-nums;text-align:center}
+#translbl{text-align:center;margin-top:16px}
+#transglow{
+  position:absolute;left:50%;top:50%;width:420px;height:420px;margin:-210px 0 0 -210px;pointer-events:none;
+  background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);
+  animation:glowPulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes glowPulse{from{transform:scale(0.9);opacity:0.4}to{transform:scale(1.1);opacity:0.8}}
+#transprog{position:absolute;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom) + 24px);height:2px;background:var(--border)}
+#transprog i{position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;display:block}
+#transprog i.run{transition:transform 2s linear;transform:scaleX(1)}
+
+/* ---------- reveal ---------- */
+.layer{min-height:88dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;padding:24px 0}
+.layer .glow{
+  position:absolute;left:50%;top:50%;width:420px;height:420px;margin:-210px 0 0 -210px;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);opacity:0;transition:opacity .8s var(--ease);
+}
+.layer.on .glow{opacity:1}
+.bignum{font-weight:900;font-size:clamp(96px,30vw,160px);letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums;position:relative}
+.midnum{font-weight:900;font-size:56px;letter-spacing:-0.03em;line-height:1.05;font-variant-numeric:tabular-nums;position:relative}
+.layer .sub{font-size:16px;margin-top:12px}
+.layer .sub2{font-size:16px;color:var(--text-2);margin-top:6px}
+.hint{
+  position:absolute;bottom:8px;left:0;right:0;text-align:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--text-2);text-transform:uppercase;
+  animation:hintB 1.2s ease-in-out infinite alternate;
+}
+@keyframes hintB{from{transform:translateY(0)}to{transform:translateY(6px)}}
+#dayCanvas{width:100%;height:280px;display:block}
+
+/* silhouettes */
+.silwrap{position:relative;width:220px;height:120px;margin:24px auto 8px}
+.sil-l{position:absolute;inset:0}
+.sil-l .p{position:absolute;background:var(--border)}
+.sil-l.blue .p{background:var(--accent)}
+.fillClip{position:absolute;inset:0;overflow:hidden;transform:translateY(100%);transition:transform 1.2s var(--ease)}
+.fillClip .sil-l{transform:translateY(-100%);transition:transform 1.2s var(--ease)}
+.layer.on .fillClip{transform:translateY(0)}
+.layer.on .fillClip .sil-l{transform:translateY(0)}
+
+/* pushup figure */
+.pushwrap{width:200px;height:110px;margin:20px auto 4px;position:relative}
+.pushbody{position:absolute;left:10px;bottom:26px;width:180px;height:40px;transform-origin:right bottom}
+.layer.on .pushbody{animation:pushA 0.9s var(--ease) infinite alternate}
+@keyframes pushA{from{transform:rotate(0deg)}to{transform:rotate(8deg)}}
+.pushbody .head{position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--text)}
+.pushbody .torso{position:absolute;left:22px;top:10px;width:130px;height:12px;border-radius:6px;background:var(--text)}
+.pushbody .arm{position:absolute;left:34px;top:18px;width:10px;height:44px;border-radius:5px;background:var(--text-2)}
+.pushbody .leg{position:absolute;right:6px;top:14px;width:34px;height:10px;border-radius:5px;background:var(--text);transform:rotate(12deg)}
+.pushwrap .ground{position:absolute;left:0;right:0;bottom:18px;height:2px;background:var(--border)}
+.pushcount{font-family:var(--mono);font-size:12px;color:var(--text-2);letter-spacing:0.05em}
+
+/* exits timeline */
+.extl{position:relative;width:100%;max-width:320px;height:20px;margin:20px auto 0}
+.extl .bar{position:absolute;left:0;right:0;top:9px;height:2px;background:var(--border)}
+.extl .pt{position:absolute;top:4px;left:0;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+
+/* padlock */
+.lockwrap{position:relative;width:140px;height:150px;margin:0 auto 20px}
+.lockbody{
+  position:absolute;left:22px;bottom:0;width:96px;height:80px;border-radius:16px;
+  background:var(--surface);border:2px solid var(--accent);
+}
+.lockshackle{
+  position:absolute;left:39px;bottom:66px;width:62px;height:52px;
+  border:10px solid var(--accent);border-bottom:none;border-radius:31px 31px 0 0;
+  transform:translateY(-22px) rotate(-18deg);transform-origin:right bottom;
+  transition:transform .5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.lockwrap.closed .lockshackle{transform:translateY(0) rotate(0)}
+@keyframes lockSnap{0%{transform:scale(1)}40%{transform:scale(0.94)}100%{transform:scale(1)}}
+.lockwrap.closed .lockbody{animation:lockSnap .16s ease-out}
+
+/* details */
+details.calc{margin-top:24px;text-align:left}
+details.calc summary{
+  list-style:none;font-family:var(--mono);font-size:12px;letter-spacing:0.05em;color:var(--text-2);
+  text-transform:uppercase;cursor:pointer;padding:12px 0;
+}
+details.calc summary::-webkit-details-marker{display:none}
+details.calc .calcbody{animation:fadeIn .3s var(--ease)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.calch{font-family:var(--mono);font-size:12px;letter-spacing:0.05em;color:var(--text);text-transform:uppercase;margin:18px 0 6px}
+.calcp{font-size:14px;color:var(--text-2);margin-bottom:6px}
+.calcf{font-family:var(--mono);font-size:13px;color:var(--text);margin-bottom:6px;text-transform:none;letter-spacing:0}
+
+/* serbia pill */
+#srbPill{
+  position:fixed;left:16px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:30;
+  background:rgba(19,24,36,0.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid var(--border);border-radius:14px;padding:8px 12px;max-width:260px;
+  opacity:0;transform:translateY(8px);transition:opacity .4s var(--ease),transform .4s var(--ease);
+  pointer-events:none;text-align:left;color:var(--text);
+}
+#srbPill.show{opacity:1;transform:translateY(0);pointer-events:auto}
+#srbPill .l1{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;color:var(--text-2);text-transform:uppercase}
+#srbPill .l2{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+#srbPill .l3{font-size:12px;color:var(--text-2)}
+
+/* toast */
+#toastWrap{position:fixed;top:calc(env(safe-area-inset-top) + 60px);left:0;right:0;z-index:70;pointer-events:none;display:flex;justify-content:center;padding:0 20px}
+.toast{
+  background:var(--surface);border:1px solid var(--accent);border-radius:16px;padding:12px 16px;max-width:400px;width:100%;
+  display:flex;gap:10px;align-items:flex-start;
+  transform:translateY(-120%);transition:transform .4s var(--ease);box-shadow:0 12px 40px rgba(0,0,0,0.5);
+}
+.toast.show{transform:translateY(0)}
+.toast .tdot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;margin-top:6px;animation:pulseDot 1s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+.toast .tl1{font-size:14px;font-weight:600}
+.toast .tl2{font-size:13px;color:var(--text-2)}
+
+/* preview overlay */
+#preview{position:fixed;inset:0;z-index:80;background:rgba(5,7,13,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px}
+#preview.show{display:flex}
+#preview img{max-width:min(80vw,300px);max-height:60vh;border-radius:12px;border:1px solid var(--border)}
+#preview .ptx{font-size:15px;text-align:center}
+#preview .ptx2{font-size:13px;color:var(--text-2);text-align:center}
+
+/* estimate note */
+.estnote{font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--accent);text-transform:uppercase;text-align:center;margin-bottom:8px}
+
+/* reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition-duration:.2s !important;transition-property:opacity !important;transform:none !important}
+  .a{opacity:0;transform:none}
+  .a.in{opacity:1}
+  #bgGrid{animation:none !important}
+  .fillClip,.fillClip .sil-l{transform:none !important}
+}
+</style>
+</head>
+<body>
+<div id="bgWrap" aria-hidden="true"><div id="bgGrid"></div></div>
+<header id="topbar">
+  <div class="inner">
+    <div id="brandMini"><span class="w">Trosku</span><span class="d"></span></div>
+    <div id="countdown" class="tnum" aria-live="off"></div>
+  </div>
+</header>
+<div id="toastWrap"></div>
+<main id="app"></main>
+<script>
+(function(){
+'use strict';
+
+/* ================= constants ================= */
+var DAY_NUMBER = 1;
+var AWAKE_MIN = 960;
+var PHONE_KG = 0.17;
+var SERBIA_USERS = 6130000;
+var PICKUPS_BASELINE = 58;
+var SERBIA_PER_SEC = SERBIA_USERS * PICKUPS_BASELINE / 86400;
+var LIFE_AGE = 75;
+var RM = false;
+try { RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+
+/* ================= helpers ================= */
+function el(tag, attrs){
+  var e = document.createElement(tag);
+  if (attrs) {
+    for (var k in attrs) {
+      if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+      var v = attrs[k];
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k === 'style' && typeof v === 'object') { for (var s in v) e.style[s] = v[s]; }
+      else if (k.slice(0,2) === 'on' && typeof v === 'function') e.addEventListener(k.slice(2), v);
+      else if (k === 'disabled' || k === 'hidden' || k === 'autofocus') { if (v) e[k] = true; }
+      else e.setAttribute(k, v);
+    }
+  }
+  for (var i = 2; i < arguments.length; i++) {
+    var c = arguments[i];
+    if (c == null) continue;
+    if (Array.isArray(c)) { for (var j = 0; j < c.length; j++) if (c[j] != null) e.append(c[j]); }
+    else e.append(c);
+  }
+  return e;
+}
+
+function fmt(x, decimals){
+  decimals = decimals || 0;
+  var neg = x < 0; x = Math.abs(x);
+  var s = x.toFixed(decimals);
+  var parts = s.split('.');
+  var ip = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return (neg ? '-' : '') + ip + (parts[1] ? ',' + parts[1] : '');
+}
+function fmtM(m){
+  if (m >= 10) return fmt(Math.round(m));
+  return fmt(m, 1);
+}
+function clamp(x, a, b){ return Math.min(b, Math.max(a, x)); }
+function haptic(p){ try { if (navigator.vibrate) navigator.vibrate(p); } catch(e){} }
+function lsGet(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+function ssGet(k){ try { return sessionStorage.getItem(k); } catch(e){ return null; } }
+function ssSet(k, v){ try { sessionStorage.setItem(k, v); } catch(e){} }
+function pad2(x){ return (x < 10 ? '0' : '') + x; }
+function nowHHMM(){ var d = new Date(); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+
+/* count-up */
+function countUp(node, target, opts){
+  opts = opts || {};
+  var dec = opts.decimals || 0;
+  var suffix = opts.suffix || '';
+  var from = opts.from || 0;
+  var done = opts.done || null;
+  if (RM) { node.textContent = fmt(target, dec) + suffix; if (done) done(); return; }
+  var dur = opts.duration || (1000 + Math.min(400, Math.log10(Math.max(target, 2)) * 100));
+  var t0 = performance.now();
+  function frame(t){
+    var p = clamp((t - t0) / dur, 0, 1);
+    var e = 1 - Math.pow(1 - p, 3);
+    node.textContent = fmt(from + (target - from) * e, dec) + suffix;
+    if (p < 1) requestAnimationFrame(frame);
+    else { node.textContent = fmt(target, dec) + suffix; if (done) done(); }
+  }
+  requestAnimationFrame(frame);
+}
+function punchAndRipple(node){
+  if (RM) return;
+  node.classList.remove('punch');
+  void node.offsetWidth;
+  node.classList.add('punch');
+  var r = el('span', { class: 'ripple', 'aria-hidden': 'true' });
+  node.append(r);
+  setTimeout(function(){ r.remove(); }, 750);
+}
+function stagger(container){
+  var items = container.querySelectorAll('.a:not(.in)');
+  for (var i = 0; i < items.length; i++) {
+    items[i].style.transitionDelay = (i * 70) + 'ms';
+    (function(it){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ it.classList.add('in'); }); }); })(items[i]);
+  }
+}
+
+/* ================= App state ================= */
+var App = {
+  screen: null,
+  platform: null,       // 'iphone' | 'android'
+  androidBrand: null,   // 'samsung' | 'xiaomi' | 'other'
+  deviceLang: (navigator.language || 'sr'),
+  enLang: false,
+  estimate: false,
+  n: 0, nRaw: 0, age: null, isPartialToday: false, partialHHMM: '',
+  m: 0, year: 0, tons: 0, life: 0,
+  exits: [],            // {at, away}
+  openedAt: Date.now(),
+  openedAtPerf: performance.now(),
+  suppressExit: false,
+  introDone: false,
+  revealActive: false,
+  guideStep: 0
+};
+
+var main = document.getElementById('app');
+var screens = {};
+
+/* ================= navigation ================= */
+var navigating = false;
+function go(id, opts){
+  opts = opts || {};
+  if (navigating) return;
+  navigating = true;
+  var old = App.screen ? screens[App.screen] : null;
+  builders[id]();
+  var next = screens[id];
+  App.screen = id;
+  if (!opts.pop) {
+    try { history.pushState({ screen: id }, '', ''); } catch(e){}
+  }
+  if (old && old !== next) {
+    if (old.id === 'scr-reveal') {
+      App.revealActive = false;
+      var pill = document.getElementById('srbPill');
+      if (pill) pill.classList.remove('show');
+    }
+    old.classList.add('leaving');
+    setTimeout(function(){
+      old.hidden = true;
+      old.classList.remove('leaving');
+      old.remove();
+    }, 300);
+  }
+  next.hidden = false;
+  window.scrollTo(0, 0);
+  setTimeout(function(){
+    stagger(next);
+    var h = next.querySelector('h1, h2');
+    if (h) { h.setAttribute('tabindex', '-1'); try { h.focus({ preventScroll: true }); } catch(e){ } }
+    navigating = false;
+  }, old ? 100 : 0);
+}
+window.addEventListener('popstate', function(ev){
+  var target = (ev.state && ev.state.screen) || 'hook';
+  if (target === App.screen) return;
+  if (builders[target]) go(target, { pop: true });
+});
+
+function backBtn(toId){
+  return el('button', { class: 'backbtn a', 'aria-label': 'Nazad', onclick: function(){ go(toId); } },
+    el('span', { class: 'arr', text: '←' }),
+    el('span', { class: 'lbl', text: 'NAZAD' })
+  );
+}
+
+var builders = {};
+
+/* ================= topbar countdown ================= */
+function startCountdown(){
+  var cd = document.getElementById('countdown');
+  function tick(){
+    var now = new Date();
+    var mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    var diff = Math.floor((mid - now) / 1000);
+    if (diff <= 0) {
+      cd.textContent = 'ISTEKLO';
+      cd.classList.add('expired');
+      return;
+    }
+    var h = Math.floor(diff / 3600), m = Math.floor((diff % 3600) / 60), s = diff % 60;
+    cd.textContent = 'BRIŠE SE ZA ' + pad2(h) + ':' + pad2(m) + ':' + pad2(s);
+  }
+  tick();
+  setTimeout(function(){
+    tick();
+    setInterval(tick, 1000);
+  }, 1000 - (Date.now() % 1000));
+}
+
+/* ================= toast ================= */
+var toastEl = null, toastTimer = null;
+function showToast(line1, line2){
+  var wrap = document.getElementById('toastWrap');
+  if (toastEl) { toastEl.remove(); toastEl = null; clearTimeout(toastTimer); }
+  var t = el('div', { class: 'toast', role: 'status', 'aria-live': 'polite' },
+    el('span', { class: 'tdot', 'aria-hidden': 'true' }),
+    el('div', null,
+      el('div', { class: 'tl1', text: line1 }),
+      line2 ? el('div', { class: 'tl2', text: line2 }) : null
+    )
+  );
+  wrap.append(t);
+  toastEl = t;
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ t.classList.add('show'); }); });
+  toastTimer = setTimeout(function(){
+    t.classList.remove('show');
+    setTimeout(function(){ t.remove(); if (toastEl === t) toastEl = null; }, 350);
+  }, 3200);
+}
+
+/* ================= visibility / live detection ================= */
+var leftAt = null;
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden') {
+    leftAt = Date.now();
+  } else {
+    if (leftAt == null) return;
+    var away = (Date.now() - leftAt) / 1000;
+    leftAt = null;
+    if (App.suppressExit) {
+      setTimeout(function(){ App.suppressExit = false; }, 1500);
+      return;
+    }
+    if (away < 1.5) return;
+    App.exits.push({ at: Date.now(), away: away });
+    haptic(12);
+    if (App.introDone) {
+      var sTxt;
+      if (away >= 60) {
+        var mn = Math.floor(away / 60), sc = Math.round(away % 60);
+        sTxt = mn + ' min ' + sc + ' s';
+      } else {
+        sTxt = Math.round(away) + ' sekundi';
+      }
+      if (App.exits.length === 1) {
+        showToast('Izašao si iz aplikacije. Vratio si se posle ' + sTxt + '.', 'Brojim.');
+      } else {
+        showToast('Opet. ' + App.exits.length + '. put. Nije te bilo ' + sTxt + '.');
+      }
+    }
+    if (App.revealActive) updateExitsLayer();
+  }
+});
+
+/* ================= parallax scroll var ================= */
+(function(){
+  var pending = false;
+  window.addEventListener('scroll', function(){
+    if (pending || RM) return;
+    pending = true;
+    requestAnimationFrame(function(){
+      document.documentElement.style.setProperty('--scroll', String(window.scrollY));
+      pending = false;
+    });
+  }, { passive: true });
+})();
+
+/* ================= intro ================= */
+function runIntro(cb){
+  if (ssGet('kpd_intro_seen')) { finishNoIntro(cb); return; }
+  ssSet('kpd_intro_seen', '1');
+  var letters = 'Trosku'.split('');
+  var wm = el('div', { id: 'wordmark', 'aria-label': 'Trosku' });
+  letters.forEach(function(L){
+    var span = el('span', { class: 'ltr' }, L, el('span', { class: 'blur', 'aria-hidden': 'true', text: L }));
+    wm.append(span);
+  });
+  var dot = el('div', { id: 'introDot', 'aria-hidden': 'true' }, el('span', { class: 'glow' }));
+  var line = el('div', { id: 'introLine', 'aria-hidden': 'true' },
+    el('span', { class: 'prog' }, el('span', { class: 'fill' })));
+  var box = el('div', { id: 'introBox' }, wm, dot, line);
+  var intro = el('div', { id: 'intro' }, box);
+  document.body.append(intro);
+
+  var timers = [];
+  var skipped = false;
+  function T(fn, ms){ timers.push(setTimeout(fn, ms)); }
+
+  var ltrs = wm.querySelectorAll('.ltr');
+
+  if (RM) {
+    intro.style.opacity = '1';
+    for (var i = 0; i < ltrs.length; i++) ltrs[i].classList.add('on');
+    setTimeout(function(){
+      intro.style.opacity = '0';
+      setTimeout(function(){ intro.hidden = true; intro.remove(); cb(); }, 400);
+    }, 400);
+    return;
+  }
+
+  // phase 1: letters 150-870
+  for (var i = 0; i < ltrs.length; i++) {
+    (function(idx){ T(function(){ ltrs[idx].classList.add('on'); }, 150 + idx * 60); })(i);
+  }
+  // dot position: after "u"
+  function placeDot(){
+    var last = ltrs[ltrs.length - 1];
+    var r = last.getBoundingClientRect();
+    var br = box.getBoundingClientRect();
+    dot.style.left = (r.right - br.left + 6) + 'px';
+    dot.style.top = (r.bottom - br.top - 14) + 'px';
+    dot.style.position = 'absolute';
+  }
+  // phase 2: dot fall 800-1100
+  T(function(){
+    placeDot();
+    dot.style.transform = 'translateY(-120px)';
+    dot.style.transition = 'opacity 80ms linear';
+    dot.style.opacity = '1';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      dot.style.transition = 'opacity 80ms linear, transform 300ms cubic-bezier(0.55,0,1,0.45)';
+      dot.style.transform = 'translateY(0)';
+    });});
+  }, 800);
+  // phase 3: bounce 1100-1300 + glow
+  T(function(){
+    dot.style.transition = 'transform 100ms cubic-bezier(0.33,1,0.68,1)';
+    dot.style.transform = 'translateY(-18px)';
+    T(function(){
+      dot.style.transform = 'translateY(0)';
+    }, 100);
+    var g = dot.querySelector('.glow');
+    g.style.opacity = '0.6';
+    g.style.transition = 'transform 400ms var(--ease), opacity 400ms var(--ease)';
+    requestAnimationFrame(function(){ g.style.transform = 'scale(3.5)'; g.style.opacity = '0'; });
+  }, 1100);
+  // phase 4: pulse 1300-1550
+  T(function(){
+    dot.style.transition = 'transform 125ms var(--ease)';
+    dot.style.transform = 'scale(1.45)';
+    T(function(){ dot.style.transform = 'scale(1)'; }, 125);
+  }, 1300);
+  // phase 5: dot -> line 1550-1800
+  T(function(){
+    dot.style.transition = 'opacity 150ms var(--ease), transform 150ms var(--ease)';
+    dot.style.opacity = '0';
+    dot.style.transform = 'scale(0.4)';
+    var dl = dot.getBoundingClientRect();
+    var ll = line.getBoundingClientRect();
+    var ox = clamp((dl.left + 6 - ll.left) / Math.max(ll.width, 1) * 100, 0, 100);
+    line.style.transformOrigin = ox + '% 50%';
+    line.style.transition = 'transform 250ms var(--ease)';
+    line.style.transform = 'scaleX(1)';
+  }, 1550);
+  // phase 6: progress 1800-2050
+  T(function(){
+    var f = line.querySelector('.fill');
+    f.style.transition = 'transform 250ms linear';
+    f.style.transform = 'scaleX(1)';
+  }, 1800);
+  // phase 7: FLIP to corner 2050-2500
+  T(function(){
+    var target = document.querySelector('#brandMini .w');
+    var tr = target.getBoundingClientRect();
+    var wr = wm.getBoundingClientRect();
+    var scale = 0.3;
+    var dx = tr.left - wr.left - wr.width * (1 - scale) / 2;
+    var dy = tr.top - wr.top - wr.height * (1 - scale) / 2;
+    wm.style.transition = 'transform 450ms var(--ease)';
+    wm.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
+    line.style.transition = 'opacity 200ms linear';
+    line.style.opacity = '0';
+  }, 2050);
+  T(function(){ intro.style.opacity = '0'; }, 2250);
+  T(function(){ cb(); }, 2300);
+  T(function(){ intro.hidden = true; intro.remove(); }, 2500);
+
+  intro.addEventListener('pointerdown', function(){
+    if (skipped) return;
+    skipped = true;
+    timers.forEach(clearTimeout);
+    intro.style.transition = 'opacity 200ms linear';
+    intro.style.opacity = '0';
+    setTimeout(function(){ intro.hidden = true; intro.remove(); }, 220);
+    cb();
+  }, { once: true });
+}
+function finishNoIntro(cb){ cb(); }
+
+/* ================= HOOK screen ================= */
+builders.hook = function(){
+  var scr = el('section', { class: 'screen', id: 'scr-hook' });
+  screens.hook = scr;
+
+  scr.append(el('div', { class: 'mono a', text: 'TROSKU · DAN ' + pad2(DAY_NUMBER) , style: { marginBottom: '16px' } }));
+
+  var h1 = el('h1', { class: 'hook' });
+  var l1words = 'Tvoj telefon već broji koliko puta ga otključaš.'.split(' ');
+  var l2words = 'Samo ti to ne pokazuje.'.split(' ');
+  l1words.forEach(function(w, i){
+    var s = el('span', { class: 'hookword', text: w });
+    h1.append(s); h1.append(' ');
+    setTimeout(function(){ s.classList.add('in'); }, 200 + i * 90);
+  });
+  var line2 = el('span', { style: { color: 'var(--text-2)' } });
+  h1.append(el('br'));
+  l2words.forEach(function(w, i){
+    var s = el('span', { class: 'hookword', text: w });
+    line2.append(s); line2.append(' ');
+    setTimeout(function(){ s.classList.add('in'); }, 200 + l1words.length * 90 + 400 + i * 90);
+  });
+  h1.append(line2);
+  scr.append(h1);
+
+  // slot number
+  var slotVal = el('span', { class: 'slotv tnum', text: '?' });
+  var slotNum = el('div', { id: 'slotNum' }, slotVal);
+  var slotCard = el('div', { id: 'slotCard', 'aria-hidden': 'true' }, slotNum);
+  scr.append(slotCard);
+
+  var btn = el('button', { class: 'btn primary a', text: 'Pronađi svoj broj', onclick: function(){ go('phone'); } });
+  var fine = el('p', { class: 'small-t a', text: 'Traje 30 sekundi. Ništa ne šalješ nigde.', style: { textAlign: 'center', marginTop: '12px' } });
+  var ctaBox = el('div', null, btn, fine);
+  ctaBox.style.opacity = '0';
+  ctaBox.style.transition = 'opacity .5s var(--ease)';
+  scr.append(ctaBox);
+
+  var last = lsGet('kpd_last');
+  if (last && last.n) {
+    var again = el('button', { class: 'btn secondary', text: 'Poslednji put si upisao ' + fmt(last.n) + '. Pogledaj opet', style: { marginTop: '12px' },
+      onclick: function(){
+        App.n = last.n; App.nRaw = last.n; App.age = last.age || null; App.isPartialToday = false;
+        computeDerived();
+        go('reveal');
+      } });
+    ctaBox.append(again);
+  }
+
+  main.append(scr);
+
+  // slot roll
+  var stopped = false;
+  function setSlot(v, isQ){
+    var old = slotVal;
+    var nu = el('span', { class: 'slotv tnum' + (isQ ? ' qm' : ''), text: String(v) });
+    slotNum.append(nu);
+    if (RM) { old.remove(); slotVal = nu; return; }
+    nu.style.transform = 'translate(-50%, 60%)';
+    nu.style.opacity = '0';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      nu.style.transition = 'transform 90ms linear, opacity 90ms linear';
+      nu.style.transform = 'translate(-50%,-50%)';
+      nu.style.opacity = '1';
+      old.style.transition = 'transform 90ms linear, opacity 90ms linear';
+      old.style.transform = 'translate(-50%,-160%)';
+      old.style.opacity = '0';
+    });});
+    setTimeout(function(){ old.remove(); }, 150);
+    slotVal = nu;
+  }
+  function rnd(){ return 20 + Math.floor(Math.random() * 381); }
+  function finish(){
+    stopped = true;
+    setSlot('?', true);
+    setTimeout(function(){
+      punchAndRipple(slotNum);
+      ctaBox.style.opacity = '1';
+      stagger(ctaBox);
+    }, 120);
+  }
+  if (RM) {
+    slotVal.textContent = '?'; slotVal.classList.add('qm');
+    ctaBox.style.opacity = '1'; stagger(ctaBox);
+  } else {
+    slotVal.textContent = String(rnd());
+    var t = 0;
+    var fastEnd = 900;
+    var iv = setInterval(function(){
+      t += 50;
+      if (App.screen !== 'hook') { clearInterval(iv); return; }
+      setSlot(rnd());
+      if (t >= fastEnd) {
+        clearInterval(iv);
+        var slows = [80, 110, 150, 200, 260, 330];
+        var idx = 0;
+        function slowTick(){
+          if (App.screen !== 'hook' || stopped) return;
+          if (idx >= slows.length) { finish(); return; }
+          setSlot(rnd());
+          setTimeout(slowTick, slows[idx++]);
+        }
+        setTimeout(slowTick, slows[0]);
+      }
+    }, 50);
+  }
+};
+
+/* ================= PHONE screen ================= */
+function detectPlatform(){
+  var ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'iphone';
+  if (/Android/.test(ua)) return 'android';
+  return null;
+}
+builders.phone = function(){
+  var scr = el('section', { class: 'screen', id: 'scr-phone' });
+  screens.phone = scr;
+  scr.append(backBtn('hook'));
+  scr.append(el('h2', { class: 'title a', text: 'Koji telefon držiš?' }));
+
+  var detected = detectPlatform();
+  var selected = App.platform || detected;
+
+  var chipRow = null;
+  var nextBtn = el('button', { class: 'btn primary a', text: 'Dalje', disabled: !selected, onclick: function(){
+    App.guideStep = 0;
+    go('guide');
+  } });
+
+  function makeCard(key, name, sub){
+    var card = el('button', { class: 'platcard a', 'aria-label': name, onclick: function(){
+      App.platform = key;
+      selected = key;
+      cardI.classList.toggle('sel', key === 'iphone');
+      cardA.classList.toggle('sel', key === 'android');
+      nextBtn.disabled = false;
+      updateChips();
+      updateEnRow();
+    } },
+      el('span', { class: 'sil', 'aria-hidden': 'true' }),
+      el('span', { class: 'nm', text: name }),
+      el('span', { class: 'sub', text: sub })
+    );
+    if (detected === key) card.append(el('span', { class: 'badge', text: 'PREPOZNATO' }));
+    return card;
+  }
+  var cardI = makeCard('iphone', 'iPhone', 'SCREEN TIME');
+  var cardA = makeCard('android', 'Android', 'DIGITALNO BLAGOSTANJE');
+  if (selected === 'iphone') cardI.classList.add('sel');
+  if (selected === 'android') cardA.classList.add('sel');
+  if (selected) App.platform = selected;
+
+  scr.append(el('div', { class: 'platgrid' }, cardI, cardA));
+
+  // brand chips (android)
+  chipRow = el('div', { class: 'chiprow a' });
+  var chips = [
+    { key: 'samsung', label: 'Samsung' },
+    { key: 'xiaomi', label: 'Xiaomi / Redmi / POCO' },
+    { key: 'other', label: 'Drugi' }
+  ];
+  chips.forEach(function(c){
+    var b = el('button', { class: 'chip', text: c.label, onclick: function(){
+      App.androidBrand = c.key;
+      var all = chipRow.querySelectorAll('.chip');
+      for (var i = 0; i < all.length; i++) all[i].classList.remove('sel');
+      b.classList.add('sel');
+    } });
+    b.dataset.key = c.key;
+    chipRow.append(b);
+  });
+  function updateChips(){
+    chipRow.style.display = (App.platform === 'android') ? 'flex' : 'none';
+    if (App.platform === 'android' && !App.androidBrand) App.androidBrand = 'other';
+    var all = chipRow.querySelectorAll('.chip');
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle('sel', all[i].dataset.key === App.androidBrand);
+  }
+  scr.append(chipRow);
+
+  // brand high-entropy detection (non-blocking)
+  try {
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      var timedOut = false;
+      var to = setTimeout(function(){ timedOut = true; }, 300);
+      navigator.userAgentData.getHighEntropyValues(['model']).then(function(d){
+        clearTimeout(to);
+        if (timedOut) return;
+        var model = (d && d.model) || '';
+        var brand = 'other';
+        if (/^SM-/.test(model)) brand = 'samsung';
+        else if (/Redmi|POCO|Xiaomi|^2\d{3}|^M2/.test(model)) brand = 'xiaomi';
+        if (!App.androidBrand || App.androidBrand === 'other') {
+          App.androidBrand = brand;
+          updateChips();
+        }
+      }).catch(function(){});
+    }
+  } catch(e){}
+
+  // english toggle
+  var enDefault = App.platform === 'iphone' ? true : (App.deviceLang.indexOf('en') === 0);
+  if (App.platform === 'iphone') App.enLang = true;
+  else if (App.enLang !== true && App.enLang !== false) App.enLang = enDefault;
+
+  var enSwitch = el('button', { class: 'switch', role: 'switch', 'aria-checked': String(!!App.enLang), 'aria-label': 'Telefon mi je na engleskom',
+    onclick: function(){
+      if (App.platform === 'iphone') return;
+      App.enLang = !App.enLang;
+      enSwitch.setAttribute('aria-checked', String(App.enLang));
+    } });
+  var enNote = el('p', { class: 'small-t', text: 'iPhone nema srpski meni, pa su nazivi na engleskom — baš kako ih vidiš.', style: { marginTop: '-6px', marginBottom: '10px' } });
+  var enRow = el('div', { class: 'swrow a' },
+    el('span', { class: 'swlbl', text: 'Telefon mi je na engleskom' }),
+    enSwitch
+  );
+  function updateEnRow(){
+    if (App.platform === 'iphone') {
+      App.enLang = true;
+      enSwitch.setAttribute('aria-checked', 'true');
+      enSwitch.disabled = true;
+      enNote.style.display = 'block';
+    } else {
+      enSwitch.disabled = false;
+      App.enLang = (App.deviceLang.indexOf('en') === 0);
+      enSwitch.setAttribute('aria-checked', String(App.enLang));
+      enNote.style.display = 'none';
+    }
+  }
+  scr.append(enRow, enNote);
+  updateChips();
+  updateEnRow();
+
+  scr.append(nextBtn);
+  scr.append(el('button', { class: 'linkbtn a', text: 'Znam svoj broj', onclick: function(){ App.estimate = false; go('input'); } }));
+  main.append(scr);
+};
+
+/* ================= mockup builders ================= */
+function mockStatus(ios){
+  var sig = el('span', { class: 'sigbars', 'aria-hidden': 'true' });
+  [4,6,8,10].forEach(function(h){ sig.append(el('i', { style: { height: h + 'px' } })); });
+  var wifi = el('span', { class: 'wifi', 'aria-hidden': 'true' });
+  [14,9,4].forEach(function(w,i){ wifi.append(el('i', { style: { width: w + 'px', height: w + 'px' } })); });
+  var batt = el('span', { class: 'batt', 'aria-hidden': 'true' }, el('i'));
+  return el('div', { class: 'mstatus' },
+    el('span', { class: 'clk', text: '9:41' }),
+    ios ? el('span', { class: 'dynisland', 'aria-hidden': 'true' }) : el('span', { class: 'punchhole', 'aria-hidden': 'true' }),
+    el('span', { class: 'ind' }, sig, wifi, batt)
+  );
+}
+function phoneFrame(platform, bodyChildren){
+  var scrEl = el('div', { class: 'scr' }, mockStatus(platform === 'ios'), el('div', { class: 'mbody' }, bodyChildren));
+  return el('div', { class: 'mockwrap' }, el('div', { class: 'mock ' + (platform === 'ios' ? 'ios' : 'and'), 'aria-hidden': 'true' }, scrEl));
+}
+function homeGridMock(ios){
+  var grid = el('div', { class: 'homegrid' });
+  for (var i = 0; i < 20; i++) {
+    var ic = el('div', { class: 'appicon' });
+    if (i === 13) {
+      ic.classList.add('gray');
+      ic.append(el('span', { class: 'gear' }));
+      ic.append(el('span', { class: 'pulsering', style: { left: '50%', top: '50%', margin: '-22px 0 0 -22px' } }));
+    }
+    grid.append(ic);
+  }
+  return grid;
+}
+function fingerAt(x, y){
+  var f = el('span', { class: 'finger', style: { left: x + 'px', top: y + 'px' } });
+  var r = el('span', { class: 'tapring', style: { left: (x - 2) + 'px', top: (y - 2) + 'px' } });
+  return [r, f];
+}
+
+/* iPhone step mockups */
+function mockIphoneSettings(){
+  var rows = [
+    { name: 'General', c: '#8E8E93' },
+    { name: 'Accessibility', c: '#0A84FF' },
+    { name: 'Camera', c: '#8E8E93' },
+    { name: 'Home Screen & App Library', c: '#5AC8FA' },
+    { name: 'Screen Time', c: '#5E5CE6', hl: true },
+    { name: 'Focus', c: '#5E5CE6' }
+  ];
+  var list = el('div', { style: { borderRadius: '10px', overflow: 'hidden', marginTop: '6px' } });
+  rows.forEach(function(r){
+    var row = el('div', { class: 'setrow' + (r.hl ? ' hl' : '') },
+      el('span', { class: 'sq', style: { background: r.c } }),
+      el('span', { text: r.name, style: { fontSize: '13px' } }),
+      el('span', { class: 'chv', text: '›' })
+    );
+    list.append(row);
+  });
+  var body = el('div', null, el('div', { class: 'mtitle', text: 'Settings' }), list);
+  // finger over Screen Time row (5th row): approx y = title(46) + 6 + 4*44 + 22
+  var fy = 46 + 6 + 4 * 44 + 10;
+  var fr = fingerAt(150, fy);
+  body.append(fr[0], fr[1]);
+  return body;
+}
+function mockScreenTime(){
+  var bars = el('div', { class: 'stbars' });
+  var hs = [0.5,0.8,0.4,0.9,0.6,1,0.7];
+  hs.forEach(function(h){ bars.append(el('i', { style: { height: (h * 100) + '%' } })); });
+  setTimeout(function(){
+    var bi = bars.querySelectorAll('i');
+    for (var i = 0; i < bi.length; i++) {
+      (function(b, d){ setTimeout(function(){ b.style.transform = 'scaleY(1)'; }, d); })(bi[i], 200 + i * 60);
+    }
+  }, 300);
+  var avg = el('div', { style: { position: 'relative', padding: '4px 2px' } },
+    el('div', { style: { fontWeight: '800', fontSize: '30px' }, text: '4h 12m' }),
+    el('div', { style: { fontSize: '12px', color: '#8E8E93' }, text: 'Daily Average' }),
+    el('span', { class: 'pulsering alt1', style: { left: '30px', top: '10px' } })
+  );
+  var link = el('div', { class: 'bluelink', text: 'See All App & Website Activity' },
+    el('span', { class: 'pulsering alt2', style: { left: '90px', top: '-4px' } }));
+  return el('div', null, el('div', { class: 'mtitle', text: 'Screen Time' }), avg, bars, link);
+}
+function mockPickups(){
+  var seg = el('div', { class: 'seg' }, el('i', { class: 'on', text: 'Week' }), el('i', { text: 'Day' }));
+  var most = el('div', { class: 'mblock' }, el('div', { class: 'bt', text: 'Most Used' }),
+    el('div', { style: { height: '8px', background: '#2a2a2d', borderRadius: '4px', marginBottom: '6px' } }),
+    el('div', { style: { height: '8px', background: '#2a2a2d', borderRadius: '4px', width: '70%' } }));
+  var pick = el('div', { class: 'mblock' },
+    el('div', { class: 'bt', text: 'Pickups' }),
+    el('div', { style: { fontSize: '12px', color: '#8E8E93', marginBottom: '6px' }, text: 'Daily Average' }),
+    el('div', { class: 'hlbox', style: { display: 'inline-block' } }, el('span', { class: 'blurnum', text: '•••' })),
+    el('div', { class: 'thisnum' }, el('span', { class: 'ar', text: '←' }), el('span', { class: 'tx', text: 'OVAJ BROJ' }))
+  );
+  return el('div', null, seg, most, pick);
+}
+/* Android mockups */
+function mockAndroidSearch(enMode){
+  var qEl = el('span', { class: 'q' });
+  var search = el('div', { class: 'msearch' }, el('span', { class: 'lupa' }), qEl, el('span', { class: 'caret' }));
+  var resName = enMode ? 'Digital Wellbeing' : 'Digitalno blagostanje';
+  var res1 = el('div', { class: 'mres' }, resName, el('span', { class: 'pulsering', style: { right: '10px', top: '2px', left: 'auto' } }));
+  var res2 = el('div', { class: 'mres', text: enMode ? 'Wellbeing & parental controls' : 'Blagostanje i roditeljski nadzor' });
+  var body = el('div', null, el('div', { class: 'mtitle', text: enMode ? 'Settings' : 'Podešavanja' }), search, res1, res2);
+  var word = enMode ? 'wellbeing' : 'blagostanje';
+  var iv = null;
+  function cycle(){
+    qEl.textContent = '';
+    res1.classList.remove('show'); res2.classList.remove('show');
+    var i = 0;
+    clearInterval(iv);
+    iv = setInterval(function(){
+      if (!body.isConnected) { clearInterval(iv); return; }
+      if (i < word.length) { qEl.textContent += word[i++]; }
+      else {
+        clearInterval(iv);
+        res1.classList.add('show');
+        setTimeout(function(){ res2.classList.add('show'); }, 150);
+        setTimeout(function(){ if (body.isConnected) cycle(); }, 3200);
+      }
+    }, 70);
+  }
+  setTimeout(cycle, 400);
+  return body;
+}
+function mockAndroidWellbeing(enMode){
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', '150'); svg.setAttribute('height', '150'); svg.setAttribute('viewBox', '0 0 150 150');
+  var segs = [
+    { c: '#3B82F6', frac: 0.5, off: 0 },
+    { c: '#60A5FA', frac: 0.3, off: 0.5 },
+    { c: '#1D4ED8', frac: 0.18, off: 0.8 }
+  ];
+  var R = 58, C = 2 * Math.PI * R;
+  segs.forEach(function(s, i){
+    var c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', '75'); c.setAttribute('cy', '75'); c.setAttribute('r', String(R));
+    c.setAttribute('fill', 'none'); c.setAttribute('stroke', s.c); c.setAttribute('stroke-width', '14');
+    c.setAttribute('stroke-dasharray', (s.frac * C - 3) + ' ' + (C - s.frac * C + 3));
+    c.setAttribute('stroke-dashoffset', String(C * 0.25 - s.off * C));
+    c.setAttribute('opacity', '0');
+    svg.append(c);
+    setTimeout(function(){ c.setAttribute('opacity', '1'); }, 300 + i * 200);
+  });
+  var donut = el('div', { class: 'donutwrap' }, svg, el('span', { class: 'donutmid', text: '3h 41m' }));
+  var row1 = el('div', { class: 'androw hl2' },
+    el('span', { class: 'ic' }, el('span', { class: 'lockic' })),
+    el('span', { class: 'val', text: '•••' }),
+    el('span', { class: 'lb', text: enMode ? 'unlocks' : 'otključavanja' })
+  );
+  var row2 = el('div', { class: 'androw' },
+    el('span', { class: 'ic' }, el('span', { class: 'bellic' })),
+    el('span', { class: 'val', text: '•••' }),
+    el('span', { class: 'lb', text: enMode ? 'notifications' : 'obaveštenja' })
+  );
+  var arrow = el('div', { class: 'thisnum', style: { justifyContent: 'center' } },
+    el('span', { class: 'ar', text: '↑' }), el('span', { class: 'tx', text: 'OVAJ BROJ' }));
+  return el('div', null,
+    el('div', { class: 'mtitle', text: enMode ? 'Digital Wellbeing' : 'Digitalno blagostanje', style: { fontSize: '20px' } }),
+    donut, row1, arrow, row2);
+}
+
+/* ================= guide data ================= */
+function guideSteps(){
+  var en = App.enLang;
+  if (App.platform === 'iphone') {
+    return [
+      {
+        title: 'Otvori Settings',
+        body: [ el('p', { class: 'body-t', text: 'Siva ikonica sa zupčanikom. Na srpskom bi bilo Podešavanja, ali iPhone je na engleskom.' }) ],
+        mock: function(){ return phoneFrame('ios', homeGridMock(true)); }
+      },
+      {
+        title: 'Tapni Screen Time',
+        body: [ el('p', { class: 'body-t', text: 'Skroluj malo nadole. Screen Time je ljubičasta ikonica sa peščanim satom.' }) ],
+        mock: function(){ return phoneFrame('ios', mockIphoneSettings()); }
+      },
+      {
+        title: 'Otvori izveštaj',
+        body: [
+          el('p', { class: 'body-t', text: 'Zavisi od verzije iOS-a. Tapni ono što vidiš:' }),
+          el('div', { class: 'varcard' },
+            el('span', { class: 'vtag', text: 'iOS 27' }),
+            el('div', null, el('div', { class: 'vname', text: 'Daily Average' }), el('div', { class: 'vdesc', text: 'Tapni prosek koji piše odmah ispod naslova.' }))),
+          el('div', { class: 'varcard' },
+            el('span', { class: 'vtag', text: 'iOS 26 i stariji' }),
+            el('div', null, el('div', { class: 'vname', text: 'See All App & Website Activity' }), el('div', { class: 'vdesc', text: 'Plavi link ispod grafikona.' })))
+        ],
+        mock: function(){ return phoneFrame('ios', mockScreenTime()); }
+      },
+      {
+        title: 'Week, pa skroluj do Pickups',
+        body: [ el('p', { class: 'body-t', text: 'Gore tapni Week. Zatim skroluj nadole do dela Pickups. Tvoj broj je dnevni prosek — ne zbir za celu nedelju.' }) ],
+        mock: function(){ return phoneFrame('ios', mockPickups()); },
+        note: 'Ako vidiš samo broj za danas, i to je ok — na sledećem ekranu označi da dan još traje.'
+      }
+    ];
+  }
+  // Android
+  var brandCard = null;
+  if (App.androidBrand === 'samsung') brandCard = 'Na Samsungu meni se zove slično kao Digitalno blagostanje i roditeljski nadzor. Tapni ga.';
+  else if (App.androidBrand === 'xiaomi') brandCard = 'Na Xiaomi telefonima podatak može biti i u posebnom meniju za vreme ekrana. Tapni prvi rezultat koji pominje vreme ekrana ili blagostanje.';
+  else brandCard = 'Tapni Digitalno blagostanje.';
+  var step2body = [
+    el('p', { class: 'body-t', text: 'Na vrhu Podešavanja je polje za pretragu (lupa). Ukucaj:' }),
+    el('div', null, el('span', { class: 'bigchip', text: en ? 'wellbeing' : 'blagostanje' })),
+    el('p', { class: 'small-t', text: en ? 'Nothing? Try screen time.' : 'Ne pojavljuje se ništa? Probaj vreme ekrana ili wellbeing.' })
+  ];
+  if (brandCard) step2body.push(el('div', { class: 'card2', style: { marginTop: '10px' } }, el('p', { class: 'body-t', text: brandCard, style: { fontSize: '14px' } })));
+  return [
+    {
+      title: en ? 'Otvori Settings' : 'Otvori Podešavanja',
+      body: [ el('p', { class: 'body-t', text: 'Ikonica sa zupčanikom. Ili povuci traku sa vrha ekrana i tapni zupčanik.' }) ],
+      mock: function(){ return phoneFrame('and', homeGridMock(false)); }
+    },
+    {
+      title: 'Ukucaj u pretragu',
+      body: step2body,
+      mock: function(){ return phoneFrame('and', mockAndroidSearch(en)); }
+    },
+    {
+      title: 'Nađi broj otključavanja',
+      body: [ el('p', { class: 'body-t', text: 'Na glavnom ekranu je krug sa vremenom. Ispod njega piše koliko puta si otključao telefon danas. Na Samsungu ponekad treba skrolovati skroz nadole.' }) ],
+      mock: function(){ return phoneFrame('and', mockAndroidWellbeing(en)); },
+      note: 'Android prikazuje broj za danas. Najtačnije: pogledaj jučerašnji (strelica levo pored datuma). Ako uzmeš današnji, na sledećem ekranu označi da dan još traje.',
+      fine: 'Tačan naziv zavisi od marke telefona. Traži broj pored ikonice katanca.'
+    }
+  ];
+}
+
+/* ================= GUIDE screen ================= */
+builders.guide = function(){
+  var scr = el('section', { class: 'screen', id: 'scr-guide' });
+  screens.guide = scr;
+  var steps = guideSteps();
+  var total = steps.length;
+  var cur = clamp(App.guideStep || 0, 0, total - 1);
+
+  scr.append(backBtn('phone'));
+
+  var dots = el('div', { class: 'dots', 'aria-hidden': 'true' });
+  for (var i = 0; i < total; i++) dots.append(el('span', { class: 'dotw' }, el('span', { class: 'dotp' })));
+
+  var stepWrap = el('div', { class: 'stepWrap' });
+  var footer = el('div', { style: { marginTop: '16px' } });
+  var nextB = el('button', { class: 'btn primary', text: 'Dalje', onclick: function(){ nav(1); } });
+  var knowB = el('button', { class: 'linkbtn', text: 'Znam svoj broj', onclick: function(){ App.estimate = false; go('input'); } });
+  footer.append(nextB, knowB);
+  scr.append(dots, stepWrap, footer);
+  main.append(scr);
+
+  var curEl = null;
+  function updateDots(){
+    var dws = dots.querySelectorAll('.dotw');
+    for (var i = 0; i < dws.length; i++) {
+      dws[i].classList.toggle('act', i === cur);
+      dws[i].classList.toggle('done', i < cur);
+    }
+    nextB.textContent = (cur === total - 1) ? 'Našao sam broj' : 'Dalje';
+  }
+  function buildStep(idx){
+    var st = steps[idx];
+    var box = el('div', { class: 'step' });
+    box.append(el('div', { class: 'mono md', text: 'KORAK ' + (idx + 1) + ' / ' + total, style: { marginBottom: '8px' } }));
+    box.append(el('h2', { text: st.title, style: { fontSize: '22px', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '10px' } }));
+    st.body.forEach(function(b){ box.append(b); });
+    box.append(st.mock());
+    if (st.note) box.append(el('div', { class: 'card2', style: { marginTop: '10px' } }, el('p', { style: { fontSize: '14px' }, text: st.note })));
+    if (st.fine) box.append(el('p', { class: 'small-t', text: st.fine, style: { marginTop: '8px' } }));
+    box.append(el('button', { class: 'linkbtn', text: 'Ne vidim ovo', style: { fontSize: '13px', padding: '10px' }, onclick: openSheet }));
+    return box;
+  }
+  function show(idx, dir){
+    var old = curEl;
+    // rebuild steps fresh for brand/lang correctness
+    steps = guideSteps();
+    var nu = buildStep(idx);
+    if (old) {
+      if (!RM) {
+        old.style.transform = 'translateX(' + (dir > 0 ? -60 : 60) + 'px)';
+        old.style.opacity = '0';
+      }
+      setTimeout(function(){ old.remove(); }, 220);
+      nu.style.transform = 'translateX(' + (dir > 0 ? 60 : -60) + 'px)';
+      nu.style.opacity = '0';
+    }
+    stepWrap.append(nu);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      nu.style.transform = 'translateX(0)';
+      nu.style.opacity = '1';
+    });});
+    curEl = nu;
+    cur = idx;
+    App.guideStep = idx;
+    updateDots();
+  }
+  function nav(dir){
+    var nx = cur + dir;
+    if (nx >= total) { App.estimate = false; go('input'); return; }
+    if (nx < 0) return;
+    show(nx, dir);
+  }
+  // swipe
+  var px0 = 0, pt0 = 0, dragging = false;
+  stepWrap.addEventListener('pointerdown', function(e){
+    if (e.target.closest('button')) return;
+    px0 = e.clientX; pt0 = performance.now(); dragging = true;
+    if (curEl) curEl.classList.add('dragging');
+  });
+  stepWrap.addEventListener('pointermove', function(e){
+    if (!dragging || !curEl || RM) return;
+    var dx = e.clientX - px0;
+    curEl.style.transform = 'translateX(' + dx + 'px)';
+  });
+  function endDrag(e){
+    if (!dragging || !curEl) return;
+    dragging = false;
+    curEl.classList.remove('dragging');
+    var dx = e.clientX - px0;
+    var dt = performance.now() - pt0;
+    var vel = Math.abs(dx) / Math.max(dt, 1);
+    if ((Math.abs(dx) > 60 || vel > 0.4) && Math.abs(dx) > 20) {
+      if (dx < 0 && cur < total - 1) { nav(1); return; }
+      if (dx > 0 && cur > 0) { nav(-1); return; }
+    }
+    curEl.style.transform = 'translateX(0)';
+  }
+  stepWrap.addEventListener('pointerup', endDrag);
+  stepWrap.addEventListener('pointercancel', endDrag);
+
+  show(cur, 1);
+};
+
+/* ================= bottom sheet ================= */
+var sheetOverlay = null, sheetEl = null;
+function openSheet(){
+  closeSheet(true);
+  var srb = document.getElementById('srbPill');
+  if (srb) srb.classList.remove('show');
+  sheetOverlay = el('div', { id: 'sheetOverlay', onclick: function(){ closeSheet(); } });
+  var content = [];
+  content.push(el('div', { class: 'grab', 'aria-hidden': 'true' }));
+  function P(t){ return el('p', { text: t }); }
+  if (App.platform === 'iphone') {
+    content.push(el('h3', { text: 'Ne vidiš Pickups?' }));
+    content.push(P('1. Otvori Settings i povuci ekran nadole — pojaviće se pretraga. Ukucaj Screen Time.'));
+    content.push(P('2. Ako Screen Time nije uključen, videćeš dugme za uključivanje. Na iOS 27: Manage Screen Time → Turn On App & Website Activity. Na starijim: Turn On App & Website Activity.'));
+    content.push(P('3. Posle uključivanja, telefon kreće da broji od tog trenutka. Vrati se sutra uveče — tada ćeš imati pravi broj.'));
+  } else {
+    content.push(el('h3', { text: 'Ne nalaziš?' }));
+    content.push(P('1. U pretrazi Podešavanja probaj redom: blagostanje, vreme ekrana, wellbeing, screen time.'));
+    content.push(P('2. Ako se meni otvori ali nema podataka, tapni dugme za prikaz podataka ili uključi praćenje — i vrati se sutra.'));
+    content.push(P('3. Neki stariji telefoni nemaju ovu funkciju. Tada proceni koliko otprilike.'));
+  }
+  content.push(el('button', { class: 'btn primary', text: 'Pogađam svoj broj', style: { marginTop: '8px' }, onclick: function(){
+    closeSheet();
+    App.estimate = true;
+    go('input');
+  } }));
+  sheetEl = el('div', { id: 'sheet', role: 'dialog', 'aria-modal': 'true' }, content);
+  document.body.append(sheetOverlay, sheetEl);
+  sheetOverlay.style.display = 'block';
+  sheetEl.style.display = 'block';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    sheetOverlay.classList.add('show');
+    sheetEl.classList.add('show');
+  });});
+  // swipe down to close
+  var sy0 = 0, sdrag = false;
+  sheetEl.addEventListener('pointerdown', function(e){ sy0 = e.clientY; sdrag = true; });
+  sheetEl.addEventListener('pointermove', function(e){
+    if (!sdrag || RM) return;
+    var dy = e.clientY - sy0;
+    if (dy > 0) sheetEl.style.transform = 'translateY(' + dy + 'px)';
+  });
+  sheetEl.addEventListener('pointerup', function(e){
+    if (!sdrag) return;
+    sdrag = false;
+    var dy = e.clientY - sy0;
+    if (dy > 80) closeSheet();
+    else sheetEl.style.transform = '';
+  });
+}
+function closeSheet(instant){
+  if (!sheetEl) return;
+  var so = sheetOverlay, se = sheetEl;
+  sheetOverlay = null; sheetEl = null;
+  if (instant) { so.remove(); se.remove(); return; }
+  so.classList.remove('show');
+  se.classList.remove('show');
+  se.style.transform = '';
+  setTimeout(function(){ so.remove(); se.remove(); }, 420);
+  if (App.revealActive) {
+    var srb = document.getElementById('srbPill');
+    if (srb) srb.classList.add('show');
+  }
+}
+
+/* ================= INPUT screen ================= */
+builders.input = function(){
+  var scr = el('section', { class: 'screen', id: 'scr-input' });
+  screens.input = scr;
+  var backTo = App.platform ? 'guide' : 'hook';
+  scr.append(backBtn(backTo));
+
+  if (App.estimate) scr.append(el('div', { class: 'estnote a', text: 'PROCENA — PRAVI BROJ SUTRA' }));
+  scr.append(el('div', { class: 'mono a', text: 'TVOJ BROJ', style: { marginBottom: '8px' } }));
+  scr.append(el('h2', { class: 'title a', text: 'Koliko puta dnevno?' }));
+
+  var inp = el('input', { id: 'numInput', type: 'text', inputmode: 'numeric', pattern: '[0-9]*', autocomplete: 'off', maxlength: '4', placeholder: '0', 'aria-label': 'Koliko puta dnevno otključaš telefon' });
+  var focusline = el('span', { class: 'focusline' });
+  var iline = el('div', { class: 'inputline' }, focusline);
+  inp.addEventListener('focus', function(){ iline.classList.add('foc'); });
+  inp.addEventListener('blur', function(){ iline.classList.remove('foc'); });
+
+  var live = el('p', { id: 'liveline', 'aria-live': 'polite' });
+  var valmsg = el('p', { id: 'valmsg' });
+
+  var partialOn = false;
+  var partialInfo = el('p', { class: 'small-t', text: '', style: { display: 'none', paddingBottom: '8px' } });
+  var partialSw = el('button', { class: 'switch', role: 'switch', 'aria-checked': 'false', 'aria-label': 'Ovo je današnji broj, a dan još traje', onclick: function(){
+    partialOn = !partialOn;
+    partialSw.setAttribute('aria-checked', String(partialOn));
+    if (partialOn) {
+      partialInfo.textContent = 'Zaključno sa sada (' + nowHHMM() + '), preračunaćemo na ceo dan.';
+      partialInfo.style.display = 'block';
+    } else {
+      partialInfo.style.display = 'none';
+    }
+  } });
+  var partialRow = el('div', { class: 'swrow a' },
+    el('span', { class: 'swlbl', text: 'Ovo je današnji broj, a dan još traje' }),
+    partialSw);
+
+  var ageInp = el('input', { id: 'ageInput', type: 'text', inputmode: 'numeric', maxlength: '2', 'aria-label': 'Koliko imaš godina (nije obavezno)' });
+  var ageMsg = el('p', { class: 'small-t', text: '', style: { minHeight: '18px', marginTop: '4px' } });
+  var ageRow = el('div', { class: 'a', style: { padding: '8px 0 4px' } },
+    el('p', { style: { fontSize: '15px', fontWeight: '600', marginBottom: '8px' }, text: 'Koliko imaš godina? (nije obavezno)' }),
+    ageInp, ageMsg);
+
+  var submit = el('button', { class: 'btn primary', text: 'Pokaži šta to znači', disabled: true, onclick: doSubmit });
+  var ctaWrap = el('div', { class: 'ctaWrap a', style: { marginTop: '12px' } }, submit);
+
+  function getN(){ var v = inp.value.replace(/\D/g, ''); return v ? parseInt(v, 10) : 0; }
+  function validate(){
+    var n = getN();
+    valmsg.classList.remove('err');
+    if (!n) {
+      submit.disabled = true;
+      live.textContent = '';
+      valmsg.textContent = '';
+      return;
+    }
+    var m = AWAKE_MIN / n;
+    if (m < 1) live.textContent = 'To je više od jednom u minuti dok si budan.';
+    else if (m < 10) live.textContent = 'To je jednom na svakih ' + fmt(m, 1) + ' minuta dok si budan.';
+    else live.textContent = 'To je jednom na svakih ' + fmt(Math.round(m)) + ' minuta dok si budan.';
+    live.style.opacity = '0';
+    requestAnimationFrame(function(){ live.style.transition = 'opacity .15s'; live.style.opacity = '1'; });
+    if (n > 1000) {
+      valmsg.classList.add('err');
+      valmsg.textContent = 'To je više od jednom u minuti, svih 16 sati. Verovatno si uzeo zbir za celu nedelju — podeli ga sa 7.';
+      submit.disabled = true;
+      return;
+    }
+    if (n > 300) {
+      valmsg.textContent = 'Veliki broj. Ako je to zbir za nedelju, podeli sa 7. Ako je dnevni — idemo dalje.';
+    } else {
+      valmsg.textContent = '';
+    }
+    submit.disabled = false;
+  }
+  inp.addEventListener('input', function(){
+    var clean = inp.value.replace(/\D/g, '');
+    if (clean !== inp.value) inp.value = clean;
+    validate();
+  });
+  ageInp.addEventListener('input', function(){
+    var clean = ageInp.value.replace(/\D/g, '');
+    if (clean !== ageInp.value) ageInp.value = clean;
+    var a = clean ? parseInt(clean, 10) : null;
+    if (a != null && (a < 10 || a > 99)) ageMsg.textContent = 'Upiši godine između 10 i 99, ili ostavi prazno.';
+    else ageMsg.textContent = '';
+  });
+
+  function doSubmit(){
+    var nRaw = getN();
+    if (!nRaw || nRaw > 1000) return;
+    var a = ageInp.value ? parseInt(ageInp.value, 10) : null;
+    if (a != null && (a < 10 || a > 99)) a = null;
+    App.nRaw = nRaw;
+    App.age = a;
+    App.isPartialToday = false;
+    App.partialHHMM = '';
+    var n = nRaw;
+    if (partialOn) {
+      var d = new Date();
+      var h = d.getHours() + d.getMinutes() / 60;
+      if (h >= 7 && h < 23) {
+        var hoursAwake = clamp(h - 7, 2, 16);
+        n = Math.round(nRaw * 16 / hoursAwake);
+        App.isPartialToday = true;
+        App.partialHHMM = nowHHMM();
+      }
+    }
+    App.n = n;
+    computeDerived();
+    lsSet('kpd_last', { n: App.n, age: App.age, ts: Date.now() });
+    go('transition');
+  }
+
+  scr.append(inp, iline, live, valmsg, partialRow, partialInfo, ageRow, ctaWrap);
+  main.append(scr);
+
+  // keyboard handling
+  if (window.visualViewport) {
+    var vv = window.visualViewport;
+    var onResize = function(){
+      if (App.screen !== 'input') { ctaWrap.style.transform = ''; return; }
+      var hidden = window.innerHeight - vv.height - vv.offsetTop;
+      ctaWrap.style.transform = hidden > 60 ? 'translateY(-8px)' : '';
+    };
+    vv.addEventListener('resize', onResize);
+  }
+  setTimeout(function(){ try { inp.focus(); } catch(e){} }, 350);
+};
+
+function computeDerived(){
+  App.m = AWAKE_MIN / App.n;
+  App.year = App.n * 365;
+  App.tons = App.year * PHONE_KG / 1000;
+  App.life = (App.age != null && App.age < LIFE_AGE) ? App.n * 365 * (LIFE_AGE - App.age) : 0;
+}
+
+/* ================= TRANSITION screen ================= */
+builders.transition = function(){
+  var scr = el('section', { class: 'screen', id: 'scr-trans', style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' } });
+  screens.transition = scr;
+  var num = el('div', { id: 'transnum', text: '0' });
+  var lbl = el('div', { id: 'translbl', class: 'mono md', text: 'BROJIM DANE' });
+  var glow = el('div', { id: 'transglow', 'aria-hidden': 'true' });
+  var prog = el('div', { id: 'transprog', 'aria-hidden': 'true' }, el('i'));
+  scr.append(glow, num, lbl, prog);
+  main.append(scr);
+
+  var target = App.n * 365;
+  var t0 = performance.now();
+  if (!RM) {
+    (function frame(t){
+      var p = clamp(((t || performance.now()) - t0) / 1800, 0, 1);
+      var e = p * p * p;
+      num.textContent = fmt(Math.round(target * e));
+      if (p < 1 && App.screen === 'transition') requestAnimationFrame(frame);
+    })(t0);
+  } else {
+    num.textContent = fmt(target);
+  }
+  setTimeout(function(){ if (App.screen === 'transition') lbl.textContent = 'BROJIM GODINU'; }, 700);
+  setTimeout(function(){ if (App.screen === 'transition') lbl.textContent = 'SLAŽEM SLIKU'; }, 1400);
+  requestAnimationFrame(function(){ prog.querySelector('i').classList.add('run'); });
+  setTimeout(function(){ if (App.screen === 'transition') go('reveal'); }, 2000);
+};
+
+/* ================= REVEAL ================= */
+var exitsLayerRefs = null;
+var srbInterval = null;
+
+function messageTier(n){
+  var m = AWAKE_MIN / n;
+  if (n <= 39) return {
+    t: 'Ti vodiš, telefon prati.',
+    x: 'Retka vrsta. Telefon ti je alat, a ne društvo. Većina ljudi bi ti ovo zavidela.',
+    s: 'Ostavi telefon u drugoj sobi dok ručaš. Vidi da li ćeš uopšte primetiti.'
+  };
+  if (n <= 79) return {
+    t: 'Zdrav odnos, uz poneki flert.',
+    x: 'Telefon ti je kolega, ne cimer. Ali kolega koji ume da prekine usred rečenice.',
+    s: 'Isključi obaveštenja za jednu aplikaciju koja te najčešće zove bez razloga.'
+  };
+  if (n <= 139) return {
+    t: 'Vas dvoje ste u ozbiljnoj vezi.',
+    x: 'Niko ne sudi. Samo, on te vidi svakih ' + fmtM(m) + ' minuta — češće nego iko drugi u tvom životu.',
+    s: 'Kad sedneš za sto, okreni telefon ekranom nadole. Samo to.'
+  };
+  if (n <= 219) return {
+    t: 'Tvoj palac je u boljoj formi od tebe.',
+    x: fmt(n * 365) + ' puta godišnje. Ako je palac trenirao, trenirao je ozbiljno.',
+    s: 'Prvih 30 minuta posle buđenja bez telefona. Alarm je jedini izuzetak.'
+  };
+  return {
+    t: 'Nisi sam. Samo si iskren.',
+    x: 'Većina ljudi nikad ne pogleda ovaj broj. Ti jesi. To je već pola posla.',
+    s: 'Večeras stavi punjač u hodnik. Telefon spava napolju, ti unutra.'
+  };
+}
+
+function weightComparison(tons){
+  if (tons < 1) return { t: 'Kao da si podigao mali motor. Svake godine.', shape: 'moto' };
+  if (tons < 5) return { t: 'To je kao da si podigao mali gradski auto. Ne jednom — svake godine.', shape: 'car' };
+  if (tons < 10) return { t: 'To je kao da si podigao odraslog slona.', shape: 'elephant' };
+  return { t: 'To je kao da si podigao gradski autobus.', shape: 'bus' };
+}
+
+function silhouette(shape, blue){
+  var l = el('div', { class: 'sil-l' + (blue ? ' blue' : ''), 'aria-hidden': 'true' });
+  function p(st){ l.append(el('span', { class: 'p', style: st })); }
+  if (shape === 'car') {
+    p({ left: '20px', bottom: '20px', width: '180px', height: '34px', borderRadius: '8px' });
+    p({ left: '60px', bottom: '48px', width: '100px', height: '30px', borderRadius: '12px 12px 0 0' });
+    p({ left: '48px', bottom: '6px', width: '30px', height: '30px', borderRadius: '50%' });
+    p({ left: '142px', bottom: '6px', width: '30px', height: '30px', borderRadius: '50%' });
+  } else if (shape === 'elephant') {
+    p({ left: '40px', bottom: '20px', width: '120px', height: '62px', borderRadius: '30px 26px 10px 10px' });
+    p({ left: '140px', bottom: '46px', width: '52px', height: '44px', borderRadius: '22px' });
+    p({ left: '184px', bottom: '10px', width: '12px', height: '52px', borderRadius: '6px' });
+    p({ left: '52px', bottom: '0px', width: '16px', height: '26px' });
+    p({ left: '82px', bottom: '0px', width: '16px', height: '26px' });
+    p({ left: '112px', bottom: '0px', width: '16px', height: '26px' });
+    p({ left: '138px', bottom: '0px', width: '16px', height: '26px' });
+  } else if (shape === 'bus') {
+    p({ left: '8px', bottom: '16px', width: '204px', height: '58px', borderRadius: '10px' });
+    p({ left: '20px', bottom: '48px', width: '26px', height: '18px', borderRadius: '3px', background: blue ? 'rgba(10,14,26,0.6)' : 'rgba(10,14,26,0.6)' });
+    p({ left: '54px', bottom: '48px', width: '26px', height: '18px', borderRadius: '3px', background: 'rgba(10,14,26,0.6)' });
+    p({ left: '88px', bottom: '48px', width: '26px', height: '18px', borderRadius: '3px', background: 'rgba(10,14,26,0.6)' });
+    p({ left: '122px', bottom: '48px', width: '26px', height: '18px', borderRadius: '3px', background: 'rgba(10,14,26,0.6)' });
+    p({ left: '40px', bottom: '4px', width: '28px', height: '28px', borderRadius: '50%' });
+    p({ left: '150px', bottom: '4px', width: '28px', height: '28px', borderRadius: '50%' });
+  } else { // moto
+    p({ left: '30px', bottom: '6px', width: '38px', height: '38px', borderRadius: '50%' });
+    p({ left: '150px', bottom: '6px', width: '38px', height: '38px', borderRadius: '50%' });
+    p({ left: '56px', bottom: '30px', width: '106px', height: '16px', borderRadius: '8px', transform: 'rotate(-8deg)' });
+    p({ left: '140px', bottom: '48px', width: '10px', height: '30px', borderRadius: '4px', transform: 'rotate(20deg)' });
+    p({ left: '82px', bottom: '44px', width: '34px', height: '18px', borderRadius: '8px 8px 0 0' });
+  }
+  return l;
+}
+
+/* day dots computation shared by canvas + share image */
+function computeDayDots(n, W, H){
+  var total = Math.min(Math.round(n), 1000);
+  var cols = 16;
+  var perCol = [];
+  var base = Math.floor(total / cols);
+  var rem = total - base * cols;
+  for (var i = 0; i < cols; i++) perCol.push(base);
+  // remainder random across hours
+  var idxs = [];
+  for (i = 0; i < cols; i++) idxs.push(i);
+  for (i = idxs.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tt = idxs[i]; idxs[i] = idxs[j]; idxs[j] = tt; }
+  for (i = 0; i < rem; i++) perCol[idxs[i]]++;
+  var maxCol = Math.max.apply(null, perCol.concat([1]));
+  var rows = Math.ceil(maxCol / 4);
+  var availH = H - 20;
+  var d = 6, gap = 2;
+  while (rows * (d + gap) > availH && d > 2) d -= 0.5;
+  var colW = W / cols;
+  var dots = [];
+  for (var c = 0; c < cols; c++) {
+    for (var k = 0; k < perCol[c]; k++) {
+      var row = Math.floor(k / 4);
+      var slot = k % 4;
+      var x = c * colW + colW / 2 + (slot - 1.5) * (d + gap);
+      var y = H - 14 - row * (d + gap) - d / 2;
+      dots.push({ x: x, y: y, c: c });
+    }
+  }
+  return { dots: dots, d: d, colW: colW, total: total };
+}
+
+function buildDayCanvas(container){
+  var cv = el('canvas', { id: 'dayCanvas', 'aria-label': 'Mreža tačaka po satima', role: 'img' });
+  container.append(cv);
+  var started = false;
+  return function start(){
+    if (started) return;
+    started = true;
+    var dpr = window.devicePixelRatio || 1;
+    var cw = cv.clientWidth || 350;
+    var ch = 280;
+    cv.width = Math.round(cw * dpr);
+    cv.height = Math.round(ch * dpr);
+    var ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    var data = computeDayDots(App.n, cw, ch - 18);
+    var labels = { 0: '7', 4: '11', 8: '15', 12: '19', 15: '23' };
+    function drawLabels(){
+      ctx.fillStyle = '#6B7280';
+      ctx.font = '500 10px "JetBrains Mono", ui-monospace, Menlo, monospace';
+      ctx.textAlign = 'center';
+      for (var c in labels) {
+        var x = (c === '15') ? (15 * data.colW + data.colW) : (parseInt(c, 10) * data.colW + 2);
+        ctx.fillText(labels[c], parseInt(c, 10) * data.colW + 6, ch - 4);
+      }
+    }
+    var totalDots = data.dots.length;
+    var lastIdx = Math.floor(totalDots * 0.95);
+    function paint(lit){
+      ctx.clearRect(0, 0, cw, ch);
+      for (var i = 0; i < totalDots; i++) {
+        var dot = data.dots[i];
+        if (i < lit) ctx.fillStyle = (i >= lastIdx) ? '#F0F6FC' : '#3B82F6';
+        else ctx.fillStyle = '#1F2937';
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, data.d / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      drawLabels();
+    }
+    if (RM) { paint(totalDots); return; }
+    var t0 = performance.now();
+    (function frame(t){
+      var p = clamp((t - t0) / 1600, 0, 1);
+      var e = 1 - Math.pow(1 - p, 3);
+      paint(Math.round(totalDots * e));
+      if (p < 1) requestAnimationFrame(frame);
+    })(t0);
+  };
+}
+
+function updateExitsLayer(){
+  if (!exitsLayerRefs) return;
+  var R = exitsLayerRefs;
+  var exits = App.exits;
+  var count = exits.length;
+  var prev = R.lastCount || 0;
+  R.lastCount = count;
+  if (count === 0) {
+    R.num.textContent = '0';
+    R.line1.textContent = 'Dok si koristio ovu aplikaciju, nijednom nisi izašao iz nje. Poštovanje.';
+    R.line2.textContent = '';
+    return;
+  }
+  countUp(R.num, count, { from: prev, duration: 800 });
+  R.line1.textContent = 'Dok si koristio ovu aplikaciju, izašao si iz nje ' + count + ' ' + (count === 1 ? 'put' : 'puta') + '.';
+  var maxAway = 0;
+  for (var i = 0; i < exits.length; i++) maxAway = Math.max(maxAway, exits[i].away);
+  R.line2.textContent = 'Najduže te nije bilo ' + fmt(Math.round(maxAway)) + ' sekundi.';
+  // timeline
+  while (R.tl.querySelector('.pt')) R.tl.querySelector('.pt').remove();
+  var span = Date.now() - App.openedAt;
+  exits.forEach(function(ex){
+    var frac = clamp((ex.at - App.openedAt) / Math.max(span, 1), 0, 1);
+    var pt = el('span', { class: 'pt' });
+    pt.style.transform = 'translateX(' + (frac * (R.tl.clientWidth - 12)) + 'px)';
+    R.tl.append(pt);
+  });
+}
+
+builders.reveal = function(){
+  var scr = el('section', { class: 'screen', id: 'scr-reveal' });
+  screens.reveal = scr;
+  App.revealActive = true;
+  exitsLayerRefs = null;
+
+  var layers = [];
+  function layer(build, opts){
+    opts = opts || {};
+    var L = el('div', { class: 'layer' });
+    var activated = false;
+    L._activate = function(){
+      if (activated) return;
+      activated = true;
+      L.classList.add('on');
+      build.activate(L);
+    };
+    build.dom(L);
+    layers.push(L);
+    scr.append(L);
+    return L;
+  }
+  function addHint(L){
+    L.append(el('div', { class: 'hint', 'aria-hidden': 'true', text: 'TAPNI ILI SKROLUJ ↓' }));
+  }
+  function mono(t){ return el('div', { class: 'mono md', text: t, style: { marginBottom: '14px' } }); }
+
+  /* Layer 1 — main number */
+  layer({
+    dom: function(L){
+      L.append(el('div', { class: 'glow', 'aria-hidden': 'true' }));
+      L.append(mono('TVOJ DNEVNI BROJ'));
+      var num = el('div', { class: 'bignum', text: '0' });
+      L.append(num);
+      var s1 = el('p', { class: 'sub a', text: 'puta dnevno.' });
+      var s2 = el('p', { class: 'sub2 a', text: 'Jednom na svakih ' + fmtM(App.m) + ' minuta dok si budan.' });
+      L.append(s1, s2);
+      if (App.isPartialToday) {
+        L.append(el('p', { class: 'mono a', text: 'PREČUNATO NA CEO DAN IZ ' + fmt(App.nRaw) + ' DO ' + App.partialHHMM, style: { marginTop: '10px' } }));
+      }
+      addHint(L);
+      L._num = num;
+    },
+    activate: function(L){
+      countUp(L._num, App.n, { duration: 1200, done: function(){
+        punchAndRipple(L._num);
+        haptic([18, 40, 28]);
+        setTimeout(function(){ stagger(L); }, 300);
+      } });
+      if (RM) stagger(L);
+    }
+  });
+
+  /* Layer 2 — year */
+  layer({
+    dom: function(L){
+      L.append(mono('OVE GODINE'));
+      var num = el('div', { class: 'midnum', text: '0' });
+      L.append(num,
+        el('p', { class: 'sub', text: 'puta za godinu dana.' }),
+        el('p', { class: 'sub2', text: 'Toliko puta si pomislio „samo da proverim“.' }));
+      addHint(L);
+      L._num = num;
+    },
+    activate: function(L){ countUp(L._num, App.year); }
+  });
+
+  /* Layer 3 — day grid canvas */
+  var startCanvas;
+  layer({
+    dom: function(L){
+      L.append(mono('TVOJ DAN'));
+      var wrap = el('div', { style: { width: '100%' } });
+      startCanvas = buildDayCanvas(wrap);
+      L.append(wrap,
+        el('p', { class: 'sub', text: 'Svaka tačka je jedno podizanje. Od 7 ujutru do 11 uveče.' }),
+        el('p', { class: 'small-t', text: 'Raspored po satima je ilustracija — telefon ne pamti tvoj tačan sat po sat na ovom mestu.', style: { marginTop: '8px' } }));
+      addHint(L);
+    },
+    activate: function(){ startCanvas(); }
+  });
+
+  /* Layer 4 — weight */
+  var wc = weightComparison(App.tons);
+  layer({
+    dom: function(L){
+      L.append(mono('TEŽINA'));
+      var num = el('div', { class: 'midnum', text: '0' });
+      var sil = el('div', { class: 'silwrap' },
+        silhouette(wc.shape, false),
+        el('div', { class: 'fillClip' }, silhouette(wc.shape, true)));
+      L.append(num,
+        el('p', { class: 'sub', text: 'Toliko tvoja ruka godišnje podigne — samo telefon.' }),
+        sil,
+        el('p', { class: 'sub2', text: wc.t }));
+      addHint(L);
+      L._num = num;
+    },
+    activate: function(L){ countUp(L._num, App.tons, { decimals: 1, suffix: ' t' }); }
+  });
+
+  /* Layer 5 — pushups */
+  layer({
+    dom: function(L){
+      L.append(mono('SKLEKOVI'));
+      var num = el('div', { class: 'midnum', text: '0' });
+      var body = el('div', { class: 'pushbody' },
+        el('span', { class: 'head' }), el('span', { class: 'torso' }), el('span', { class: 'arm' }), el('span', { class: 'leg' }));
+      var pc = el('div', { class: 'pushcount tnum', text: '0' });
+      var pw = el('div', { class: 'pushwrap', 'aria-hidden': 'true' }, el('span', { class: 'ground' }), body);
+      var pcount = 0;
+      body.addEventListener('animationiteration', function(){
+        pcount++;
+        pc.textContent = fmt(Math.ceil(pcount / 2));
+      });
+      L.append(num,
+        el('p', { class: 'sub', text: 'sklekova ove godine.' }),
+        el('p', { class: 'sub2', text: 'Da je svako podizanje telefona bio jedan sklek.' }),
+        pw, pc);
+      addHint(L);
+      L._num = num;
+    },
+    activate: function(L){ countUp(L._num, App.year); }
+  });
+
+  /* Layer 6 — life (conditional) */
+  if (App.age != null && App.age < LIFE_AGE) {
+    layer({
+      dom: function(L){
+        L.append(mono('DO 75. GODINE'));
+        var num = el('div', { class: 'midnum', text: '0' });
+        L.append(num,
+          el('p', { class: 'sub', text: 'puta do svoje 75. godine, ako nastaviš ovim tempom.' }),
+          el('p', { class: 'sub2', text: 'Dobra vest: tempo se menja od sutra.' }));
+        addHint(L);
+        L._num = num;
+      },
+      activate: function(L){ countUp(L._num, App.life); }
+    });
+  }
+
+  /* Layer 7 — live detection */
+  layer({
+    dom: function(L){
+      L.append(mono('DOK SI BIO OVDE'));
+      var num = el('div', { class: 'midnum', text: '0' });
+      var line1 = el('p', { class: 'sub' });
+      var line2 = el('p', { class: 'sub2' });
+      var tl = el('div', { class: 'extl', 'aria-hidden': 'true' }, el('span', { class: 'bar' }));
+      L.append(num, line1, line2, tl);
+      addHint(L);
+      exitsLayerRefs = { num: num, line1: line1, line2: line2, tl: tl, lastCount: 0 };
+    },
+    activate: function(){ updateExitsLayer(); }
+  });
+
+  /* Layer 8 — message */
+  var tier = messageTier(App.n);
+  layer({
+    dom: function(L){
+      var card = el('div', { class: 'card', style: { width: '100%', textAlign: 'left' } },
+        el('div', { class: 'mono md', text: 'ZAKLJUČAK', style: { marginBottom: '10px' } }),
+        el('h2', { style: { fontSize: '26px', fontWeight: '800', letterSpacing: '-0.03em', lineHeight: '1.15', marginBottom: '10px' }, text: tier.t }),
+        el('p', { style: { fontSize: '17px' }, text: tier.x }),
+        el('div', { class: 'card2', style: { marginTop: '16px' } },
+          el('div', { class: 'mono', text: 'SUTRA PROBAJ', style: { marginBottom: '6px' } }),
+          el('p', { style: { fontSize: '15px' }, text: tier.s }))
+      );
+      L.append(card);
+      addHint(L);
+    },
+    activate: function(){}
+  });
+
+  /* Layer 9 — padlock */
+  layer({
+    dom: function(L){
+      var lock = el('div', { class: 'lockwrap', 'aria-hidden': 'true' },
+        el('div', { class: 'lockshackle' }),
+        el('div', { class: 'lockbody' }));
+      var t1 = el('h2', { class: 'a', style: { fontSize: '32px', fontWeight: '900', letterSpacing: '-0.03em' }, text: 'Sad ga zaključaj.' });
+      var t2 = el('p', { class: 'a', style: { color: 'var(--text-2)', marginTop: '6px' }, text: 'Vidimo se sutra.' });
+      var shareBtn = el('button', { class: 'btn primary a', text: 'Sačuvaj rezultat', style: { marginTop: '24px' }, onclick: function(){ makeShareImage(shareBtn); } });
+      var retryBtn = el('button', { class: 'btn secondary a', text: 'Pokušaj ponovo', style: { marginTop: '12px' }, onclick: function(){
+        App.estimate = false;
+        go('input');
+      } });
+      var details = buildCalcDetails();
+      L.append(lock, t1, t2, shareBtn, retryBtn, details);
+      L._lock = lock;
+    },
+    activate: function(L){
+      setTimeout(function(){
+        L._lock.classList.add('closed');
+        haptic([10, 30, 60]);
+        var r = el('span', { class: 'ripple', 'aria-hidden': 'true' });
+        L._lock.append(r);
+        setTimeout(function(){ r.remove(); }, 750);
+        setTimeout(function(){ stagger(L); }, 200);
+      }, 300);
+    }
+  });
+
+  main.append(scr);
+
+  /* activation: IO + tap */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting) {
+        en.target._activate();
+        // srbPill shows once user passes layer 1
+        if (layers.indexOf(en.target) >= 1) showSrbPill();
+      }
+    });
+  }, { threshold: 0.55 });
+  layers.forEach(function(L){ io.observe(L); });
+
+  scr.addEventListener('click', function(e){
+    if (e.target.closest('button') || e.target.closest('details') || e.target.closest('a') || e.target.closest('input')) return;
+    // find first non-activated layer below current viewport center OR next layer
+    for (var i = 0; i < layers.length; i++) {
+      var r = layers[i].getBoundingClientRect();
+      if (r.top > window.innerHeight * 0.45) {
+        layers[i].scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+        layers[i]._activate();
+        return;
+      }
+    }
+  });
+
+  // first layer activates immediately
+  setTimeout(function(){ layers[0]._activate(); }, 150);
+
+  buildSrbPill();
+};
+
+/* ================= Serbia pill ================= */
+function buildSrbPill(){
+  if (document.getElementById('srbPill')) return;
+  var num = el('div', { class: 'l2 tnum', text: '0' });
+  var pill = el('button', { id: 'srbPill', 'aria-label': 'Procena otključavanja u Srbiji — kako je izračunato', onclick: function(){
+    var det = document.querySelector('details.calc');
+    if (det) {
+      det.open = true;
+      det.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+    }
+  } },
+    el('div', { class: 'l1', text: 'PROCENA · SRBIJA' }),
+    num,
+    el('div', { class: 'l3', text: 'otključavanja u Srbiji od kad si otvorio ovu stranicu' })
+  );
+  document.body.append(pill);
+  if (srbInterval) clearInterval(srbInterval);
+  srbInterval = setInterval(function(){
+    if (!App.revealActive) return;
+    var val = (performance.now() - App.openedAtPerf) / 1000 * SERBIA_PER_SEC;
+    num.textContent = fmt(Math.floor(val));
+  }, 100);
+}
+function showSrbPill(){
+  var p = document.getElementById('srbPill');
+  if (p && App.revealActive && !sheetEl) p.classList.add('show');
+}
+
+/* ================= calc details ================= */
+function buildCalcDetails(){
+  function H(t){ return el('div', { class: 'calch', text: t }); }
+  function P(t){ return el('p', { class: 'calcp', text: t }); }
+  function F(t){ return el('p', { class: 'calcf', text: t }); }
+  var body = el('div', { class: 'calcbody' },
+    H('Minuti između podizanja'),
+    F('16 h × 60 = 960 minuta budnosti (07–23h). 960 ÷ tvoj broj.'),
+    H('Godišnje'),
+    F('tvoj broj × 365.'),
+    H('Težina'),
+    F('godišnji broj × 0,17 kg.'),
+    P('Uzeli smo 170 g jer je to težina iPhone 16 (Apple), a Galaxy S25 ima 162 g (Samsung). Mnogi telefoni su teži, pa je stvarna brojka verovatno veća. Poređenja (auto, slon, autobus) su zaokružene aproksimacije.'),
+    H('Do 75. godine'),
+    F('dnevni broj × 365 × (75 − tvoje godine).'),
+    P('75 je okrugla granica, ne očekivani životni vek.'),
+    H('Ako dan još traje'),
+    F('broj do sada × 16 ÷ sati budnosti od 7h do sada.'),
+    P('Gruba procena — pretpostavlja da ćeš ostatak dana nastaviti istim tempom.'),
+    H('Brojač Srbije (procena)'),
+    F('6 130 000 × 58 ÷ 86 400 ≈ 4 115 otključavanja u sekundi.'),
+    P('6,13 miliona korisnika interneta u Srbiji (oktobar 2025) — DataReportal / Kepios, Digital 2026: Serbia. Koristimo ga kao približan broj korisnika pametnih telefona.'),
+    P('58 podizanja dnevno — RescueTime (2019), izmereno na uređajima korisnika. Uzeli smo ovaj broj jer je konzervativan: ankete daju mnogo više, npr. Reviews.org (2026) navodi 186 puta dnevno za odrasle u SAD (anketa ~1.000 ljudi, kraj 2025).'),
+    P('Delimo sa 86 400 sekundi (ceo dan), iako se telefoni podižu uglavnom dok smo budni — pa je stvarni tempo tokom dana verovatno veći.'),
+    H('Izlasci iz aplikacije'),
+    P('Brojimo koliko puta je ova stranica prestala da bude vidljiva (Page Visibility API) na duže od 1,5 sekunde. Ne znamo da li si podigao telefon — samo da si otišao sa stranice.'),
+    H('Šta nismo uračunali'),
+    P('Namerno nismo pisali koliko „fokusa gubiš“ po podizanju. Poznata istraživanja o prekidima mere povratak na radni zadatak u kancelariji, ne svaki pogled na telefon, pa bi takav broj bio netačan.'),
+    H('Privatnost'),
+    P('Tvoj broj ostaje u tvom telefonu. Ništa se ne šalje.')
+  );
+  return el('details', { class: 'calc a' },
+    el('summary', { text: 'KAKO JE IZRAČUNATO +' }),
+    body
+  );
+}
+
+/* ================= share image ================= */
+var sharing = false;
+function isInApp(){
+  return /Instagram|FBAN|FBAV|TikTok|musical_ly/.test(navigator.userAgent || '');
+}
+function makeShareImage(btn){
+  if (sharing) return;
+  sharing = true;
+  var origText = btn.textContent;
+  btn.textContent = 'Pravim sliku…';
+  btn.disabled = true;
+
+  var restore = function(){
+    btn.textContent = origText;
+    btn.disabled = false;
+    sharing = false;
+  };
+
+  Promise.all([
+    document.fonts.load('900 300px Inter'),
+    document.fonts.load('500 32px "JetBrains Mono"'),
+    document.fonts.ready
+  ]).catch(function(){}).then(function(){
+    try {
+      var cv = document.createElement('canvas');
+      cv.width = 1080; cv.height = 1920;
+      var ctx = cv.getContext('2d');
+      var INTER = 'Inter, -apple-system, sans-serif';
+      var MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+
+      // bg
+      ctx.fillStyle = '#0A0E1A';
+      ctx.fillRect(0, 0, 1080, 1920);
+      // grid
+      ctx.strokeStyle = 'rgba(240,246,252,0.04)';
+      ctx.lineWidth = 1;
+      for (var gx = 0; gx <= 1080; gx += 54) { ctx.beginPath(); ctx.moveTo(gx + 0.5, 0); ctx.lineTo(gx + 0.5, 1920); ctx.stroke(); }
+      for (var gy = 0; gy <= 1920; gy += 54) { ctx.beginPath(); ctx.moveTo(0, gy + 0.5); ctx.lineTo(1080, gy + 0.5); ctx.stroke(); }
+      // radial glow
+      var rg = ctx.createRadialGradient(540, 620, 0, 540, 620, 520);
+      rg.addColorStop(0, 'rgba(59,130,246,0.35)');
+      rg.addColorStop(1, 'rgba(59,130,246,0)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 100, 1080, 1040);
+
+      // wordmark
+      ctx.fillStyle = '#F0F6FC';
+      ctx.font = '900 44px ' + INTER;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('Trosku', 80, 120);
+      var ww = ctx.measureText('Trosku').width;
+      ctx.fillStyle = '#3B82F6';
+      ctx.beginPath(); ctx.arc(80 + ww + 14, 114, 7, 0, Math.PI * 2); ctx.fill();
+      // date
+      var d = new Date();
+      ctx.fillStyle = '#6B7280';
+      ctx.font = '500 30px ' + MONO;
+      ctx.textAlign = 'right';
+      ctx.fillText(pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + '.', 1000, 120);
+
+      // label
+      ctx.textAlign = 'center';
+      ctx.font = '500 34px ' + MONO;
+      ctx.fillStyle = '#6B7280';
+      // letter-spacing 4px manual
+      (function(){
+        var txt = 'KOLIKO PUTA DNEVNO';
+        var sp = 4;
+        var tw = 0;
+        for (var i = 0; i < txt.length; i++) tw += ctx.measureText(txt[i]).width + sp;
+        var x = 540 - tw / 2;
+        ctx.textAlign = 'left';
+        for (i = 0; i < txt.length; i++) { ctx.fillText(txt[i], x, 300); x += ctx.measureText(txt[i]).width + sp; }
+        ctx.textAlign = 'center';
+      })();
+
+      // main number
+      var nStr = fmt(App.n);
+      var fs = 380;
+      ctx.fillStyle = '#F0F6FC';
+      do {
+        ctx.font = '900 ' + fs + 'px ' + INTER;
+        if (ctx.measureText(nStr).width <= 900) break;
+        fs -= 10;
+      } while (fs > 100);
+      ctx.fillText(nStr, 540, 640);
+
+      ctx.font = '600 44px ' + INTER;
+      ctx.fillText('puta dnevno otključam telefon.', 540, 740);
+      ctx.font = '500 36px ' + INTER;
+      ctx.fillStyle = '#6B7280';
+      ctx.fillText('Jednom na svakih ' + fmtM(App.m) + ' minuta.', 540, 810);
+
+      // card
+      function rr(x, y, w, h, r){
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+      rr(80, 900, 920, 180, 36);
+      ctx.fillStyle = '#131824'; ctx.fill();
+      ctx.strokeStyle = '#1F2937'; ctx.lineWidth = 2; ctx.stroke();
+
+      if (App.tons >= 1) {
+        ctx.fillStyle = '#6B7280'; ctx.font = '500 28px ' + MONO;
+        ctx.fillText('TEŽINA', 540, 945);
+        ctx.fillStyle = '#F0F6FC'; ctx.font = '900 96px ' + INTER;
+        ctx.fillText(fmt(App.tons, 1) + ' t', 540, 1030);
+        ctx.fillStyle = '#F0F6FC'; ctx.font = '500 32px ' + INTER;
+        ctx.fillText('godišnje podignem samo telefon', 540, 1068);
+      } else {
+        ctx.fillStyle = '#6B7280'; ctx.font = '500 28px ' + MONO;
+        ctx.fillText('SKLEKOVI', 540, 945);
+        ctx.fillStyle = '#F0F6FC'; ctx.font = '900 96px ' + INTER;
+        ctx.fillText(fmt(App.year), 540, 1030);
+        ctx.fillStyle = '#F0F6FC'; ctx.font = '500 32px ' + INTER;
+        ctx.fillText('sklekova godišnje, da je svako podizanje sklek', 540, 1068);
+      }
+
+      // dot grid
+      var gridW = 840, gridH = 400;
+      var gdata = computeDayDots(App.n, gridW, gridH);
+      for (var di = 0; di < gdata.dots.length; di++) {
+        var dt = gdata.dots[di];
+        ctx.fillStyle = (di >= Math.floor(gdata.dots.length * 0.95)) ? '#F0F6FC' : '#3B82F6';
+        ctx.beginPath();
+        ctx.arc(120 + dt.x, 1160 + dt.y, Math.max(gdata.d / 2, 2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#6B7280'; ctx.font = '500 24px ' + MONO;
+      ctx.textAlign = 'center';
+      var hourLabels = [[0, '7'], [4, '11'], [8, '15'], [12, '19'], [15, '23']];
+      hourLabels.forEach(function(hl){
+        ctx.fillText(hl[1], 120 + hl[0] * (gridW / 16) + gridW / 32, 1600);
+      });
+
+      // footer
+      ctx.fillStyle = '#3B82F6'; ctx.font = '700 40px ' + INTER;
+      ctx.fillText('trosku.com', 540, 1760);
+      ctx.fillStyle = '#6B7280'; ctx.font = '500 26px ' + MONO;
+      ctx.fillText('KOLIKO PUTA TI? LINK U OPISU', 540, 1820);
+
+      App.suppressExit = true;
+      cv.toBlob(function(blob){
+        if (!blob) { restore(); return; }
+        var file = null;
+        try { file = new File([blob], 'koliko-puta-dnevno-' + App.n + '.png', { type: 'image/png' }); } catch(e){}
+        function doPreview(){
+          var url = URL.createObjectURL(blob);
+          openPreview(url);
+          restore();
+        }
+        function doDownload(){
+          try {
+            var url = URL.createObjectURL(blob);
+            var a = el('a', { href: url, download: 'koliko-puta-dnevno-' + App.n + '.png' });
+            document.body.append(a);
+            a.click();
+            a.remove();
+            setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+            showToast('Slika je sačuvana. Nađi je u preuzimanjima.');
+            restore();
+          } catch(e) { doPreview(); }
+        }
+        if (isInApp()) { doPreview(); return; }
+        if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+          navigator.share({ files: [file], title: 'Koliko puta dnevno' })
+            .then(restore)
+            .catch(function(e){
+              if (e && e.name === 'AbortError') { restore(); return; }
+              doDownload();
+            });
+        } else {
+          doDownload();
+        }
+      }, 'image/png');
+    } catch(e) {
+      restore();
+    }
+  });
+}
+function openPreview(url){
+  var old = document.getElementById('preview');
+  if (old) old.remove();
+  var srb = document.getElementById('srbPill');
+  if (srb) srb.classList.remove('show');
+  var kids = [
+    el('img', { src: url, alt: 'Slika rezultata za deljenje' }),
+    el('p', { class: 'ptx', text: 'Pritisni i drži sliku da je sačuvaš.' })
+  ];
+  if (isInApp()) kids.push(el('p', { class: 'ptx2', text: 'Za najbolji rezultat otvori link u Safariju ili Chrome-u (⋯ gore desno).' }));
+  kids.push(el('button', { class: 'btn secondary', text: 'Zatvori', style: { maxWidth: '200px' }, onclick: function(){
+    pv.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showSrbPill();
+  } }));
+  var pv = el('div', { id: 'preview', class: 'show', role: 'dialog', 'aria-modal': 'true' }, kids);
+  document.body.append(pv);
+}
+
+/* ================= boot ================= */
+startCountdown();
+runIntro(function(){
+  App.introDone = true;
+  document.getElementById('topbar').classList.add('show');
+  try { history.replaceState({ screen: 'hook' }, '', ''); } catch(e){}
+  go('hook', { pop: true });
+});
+
+})();
+</script>
+</body>
+</html>
